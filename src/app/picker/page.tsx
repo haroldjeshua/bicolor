@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { HexAlphaColorPicker, HexColorInput } from "react-colorful";
 import ModelGrid from "@/components/ModelGrid";
 import { useActionBar } from "@/components/ActionBar";
+import { Button } from "@/components/ui/button";
 import { convertAll } from "@/lib/color";
 
 const DEFAULT_COLOR = "#1a2b3c";
@@ -57,33 +58,34 @@ export default function PickerPage() {
 	useEffect(() => {
 		setContent(
 			<>
-				<button
+				<Button
+					variant="bare"
+					size="sm"
 					onClick={eyedropper}
-					className="font-mono text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
 					aria-label="Pick color from screen"
 				>
 					Eyedropper
-				</button>
-				<button
+				</Button>
+				<Button
+					variant="bare"
+					size="sm"
 					onClick={copyAll}
-					className="font-mono text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
 					aria-label="Copy all color values"
 				>
 					Copy all
-				</button>
-				<button
+				</Button>
+				<Button
+					variant="bare"
+					size="sm"
 					onClick={clear}
-					className="font-mono text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
 					aria-label="Reset to default color"
 				>
 					Clear
-				</button>
+				</Button>
 			</>,
 		);
 		return () => setContent(null);
-		// All three callbacks are stable (empty useCallback deps) — safe to omit
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [setContent]);
+	}, [setContent, eyedropper, copyAll, clear]);
 
 	return (
 		<section className="h-full w-full max-w-5xl m-auto flex flex-col p-4 gap-6 overflow-auto justify-center items-center">
