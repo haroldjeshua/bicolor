@@ -12,11 +12,12 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import ColorInput from "@/components/ColorInput";
 import ColorSwatch from "@/components/ColorSwatch";
 import ModelGrid from "@/components/ModelGrid";
+import { GamutBadge } from "@/components/GamutBadge";
 import { useActionBar } from "@/components/ActionBar";
 import { Button } from "@/components/ui/button";
 import { convert } from "@/lib/color";
 import { HexColorPicker } from "react-colorful";
-import { SwapIcon } from "@phosphor-icons/react";
+import { SwapIcon, LinkSimple, CopySimple } from "@phosphor-icons/react";
 import { type ColorModel } from "@/lib/constants";
 
 const DEFAULT_A_VALUE = "#1a2b3c";
@@ -131,25 +132,31 @@ function ConvertPageContent() {
 					variant="bare"
 					size="sm"
 					onClick={handleSwap}
+					className="text-background/60 hover:text-muted"
 					aria-label="Swap inputs"
 				>
-					Swap
+					<SwapIcon size={14} />
+					<span className="hidden md:inline">Swap</span>
 				</Button>
 				<Button
 					variant="bare"
 					size="sm"
 					onClick={handleShareUrl}
-					aria-label="Share URL"
+					className="text-background/60 hover:text-muted"
+					aria-label="Copy share URL"
 				>
-					Share
+					<LinkSimple size={14} />
+					<span className="hidden md:inline">Share</span>
 				</Button>
 				<Button
 					variant="bare"
 					size="sm"
 					onClick={handleCopyResult}
+					className="text-background/60 hover:text-muted"
 					aria-label="Copy result"
 				>
-					Copy result
+					<CopySimple size={14} />
+					<span className="hidden md:inline">Copy</span>
 				</Button>
 			</>,
 		);
@@ -193,7 +200,7 @@ function ConvertPageContent() {
 						{showPicker && (
 							<div
 								ref={pickerRef}
-								className="absolute top-full left-0 mt-2 z-50 p-1.5 border border-border rounded-xl bg-background"
+								className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 p-1.5 border border-border rounded-xl bg-background"
 							>
 								<HexColorPicker
 									color={pickerColor}
@@ -237,7 +244,8 @@ function ConvertPageContent() {
 				</div>
 			</div>
 
-			<div className="w-full max-w-2xl mt-8">
+			<div className="w-full max-w-2xl mt-8 flex flex-col gap-3">
+				<GamutBadge value={state.aValue} />
 				<ModelGrid value={state.aValue} model={state.aModel} />
 			</div>
 		</section>

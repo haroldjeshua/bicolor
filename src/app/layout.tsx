@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ActionBarProvider, ActionBar } from "@/components/ActionBar";
 import Header from "@/components/Header";
+import { DemoColorSync } from "@/components/DemoColorSync";
 import AgentationWrapper from "@/components/AgentationWrapper";
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -59,6 +60,7 @@ export default function RootLayout({
 					<main className="pt-12 pb-10 flex-1">{children}</main>
 					<ActionBar />
 				</ActionBarProvider>
+				<DemoColorSync />
 				<AgentationWrapper />
 			</body>
 		</html>

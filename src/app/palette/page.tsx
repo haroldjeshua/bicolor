@@ -11,13 +11,19 @@ import {
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import ColorSwatch from "@/components/ColorSwatch";
 import ColorInput from "@/components/ColorInput";
+import { GamutBadge } from "@/components/GamutBadge";
 import { useActionBar } from "@/components/ActionBar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { generatePalette, convert, type PaletteStep } from "@/lib/color";
 import { type ColorModel, MODEL_LABELS } from "@/lib/constants";
 import { HexColorPicker } from "react-colorful";
-import { CopySimple } from "@phosphor-icons/react";
+import {
+	ArrowCounterClockwise,
+	LinkSimple,
+	DownloadSimple,
+	CopySimple,
+} from "@phosphor-icons/react";
 
 const DEFAULT_SEED = "#1a2b3c";
 const DEFAULT_MODEL: ColorModel = "oklch";
@@ -157,14 +163,11 @@ function PalettePageContent() {
 
 	const [actionCopied, setActionCopied] = useState<string | null>(null);
 
-	const handleActionCopy = useCallback(
-		(label: string, fn: () => void) => {
-			fn();
-			setActionCopied(label);
-			setTimeout(() => setActionCopied(null), 1500);
-		},
-		[],
-	);
+	const handleActionCopy = useCallback((label: string, fn: () => void) => {
+		fn();
+		setActionCopied(label);
+		setTimeout(() => setActionCopied(null), 1500);
+	}, []);
 
 	useEffect(() => {
 		setContent(
@@ -173,30 +176,43 @@ function PalettePageContent() {
 					variant="bare"
 					size="sm"
 					onClick={handleReset}
+					className="text-background/60 hover:text-muted"
 					aria-label="Reset to default color"
 				>
-					Reset
+					<ArrowCounterClockwise size={14} />
+					<span className="hidden md:inline">Reset</span>
 				</Button>
 				<Button
 					variant="bare"
 					size="sm"
 					onClick={() => handleActionCopy("share", handleShare)}
+					className="text-background/60 hover:text-muted"
 					aria-label="Copy share URL"
 				>
-					{actionCopied === "share" ? "Copied" : "Share"}
+					<LinkSimple size={14} />
+					<span className="hidden md:inline">Share</span>
 				</Button>
 				<Button
 					variant="bare"
 					size="sm"
 					onClick={handleDownloadImage}
+					className="text-background/60 hover:text-muted"
 					aria-label="Download palette as SVG"
 				>
-					Download
+					<DownloadSimple size={14} />
+					<span className="hidden md:inline">Download</span>
 				</Button>
 			</div>,
 		);
 		return () => setContent(null);
-	}, [handleReset, handleShare, handleDownloadImage, actionCopied, handleActionCopy, setContent]);
+	}, [
+		handleReset,
+		handleShare,
+		handleDownloadImage,
+		actionCopied,
+		handleActionCopy,
+		setContent,
+	]);
 
 	const [tabCopied, setTabCopied] = useState(false);
 	const [activeTab, setActiveTab] = useState("css");
@@ -204,7 +220,8 @@ function PalettePageContent() {
 	const copyTabContent = useCallback(async () => {
 		let text = "";
 		if (activeTab === "css") text = formatCSS(steps, displayModel);
-		else if (activeTab === "tailwind") text = formatTailwind(steps, displayModel);
+		else if (activeTab === "tailwind")
+			text = formatTailwind(steps, displayModel);
 		else text = formatJSON(steps);
 		try {
 			await navigator.clipboard.writeText(text);
@@ -269,6 +286,8 @@ function PalettePageContent() {
 				/>
 			</div>
 
+			<GamutBadge value={seed} />
+
 			{steps.length === 0 ? (
 				<p className="text-muted-foreground font-mono text-sm">
 					Enter a valid color to generate a palette.
@@ -279,7 +298,7 @@ function PalettePageContent() {
 						{steps.map((s) => (
 							<div
 								key={s.index}
-								className={`flex-1 h-14 relative ${s.index === seedStep ? "ring-1 ring-inset ring-foreground/40" : ""}`}
+								className={`flex-1 h-10 md:h-14 relative ${s.index === seedStep ? "ring-1 ring-inset ring-foreground/40" : ""}`}
 								style={{ background: s.hex }}
 								title={`${s.index}: ${s[displayModel as keyof PaletteStep] as string}`}
 							>
@@ -296,7 +315,9 @@ function PalettePageContent() {
 						<div className="grid grid-cols-[3rem_1fr_5rem] gap-2 px-3 py-1.5 text-muted-foreground/50 uppercase tracking-wider">
 							<span>Step</span>
 							<span>{MODEL_LABELS[displayModel]}</span>
-							{displayModel !== "hex" && <span className="text-right">Hex</span>}
+							{displayModel !== "hex" && (
+								<span className="text-right">Hex</span>
+							)}
 						</div>
 						{steps.map((s) => {
 							const displayVal = s[displayModel as keyof PaletteStep] as string;
@@ -321,14 +342,25 @@ function PalettePageContent() {
 									</span>
 									{displayModel !== "hex" ? (
 										<div className="flex items-center gap-1 justify-end">
-											<span className="truncate text-muted-foreground">{s.hex}</span>
+											<span className="truncate text-muted-foreground">
+												{s.hex}
+											</span>
 											<button
 												onClick={() => copyStepValue(s.index, displayVal)}
 												className="shrink-0 text-muted-foreground hover:text-foreground transition-colors cursor-pointer p-0.5"
 												aria-label={`Copy step ${s.index}`}
 											>
 												{copiedIndex === s.index ? (
-													<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+													<svg
+														width="12"
+														height="12"
+														viewBox="0 0 24 24"
+														fill="none"
+														stroke="currentColor"
+														strokeWidth="2"
+														strokeLinecap="round"
+														strokeLinejoin="round"
+													>
 														<polyline points="20 6 9 17 4 12" />
 													</svg>
 												) : (
@@ -344,7 +376,16 @@ function PalettePageContent() {
 												aria-label={`Copy step ${s.index}`}
 											>
 												{copiedIndex === s.index ? (
-													<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+													<svg
+														width="12"
+														height="12"
+														viewBox="0 0 24 24"
+														fill="none"
+														stroke="currentColor"
+														strokeWidth="2"
+														strokeLinecap="round"
+														strokeLinejoin="round"
+													>
 														<polyline points="20 6 9 17 4 12" />
 													</svg>
 												) : (

@@ -24,6 +24,8 @@ declare module "culori" {
     mode: string
   ): (color: Color) => Color;
 
+  export function displayable(color: Color | string): boolean;
+
   export function clampChroma(
     color: Color,
     mode?: string,
