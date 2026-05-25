@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function Home() {
 	return (
-		<div className="flex flex-col items-center justify-center h-full px-4 gap-8">
+		<section className="min-h-[calc(100dvh-88px)] flex flex-col items-center justify-center h-full px-4 gap-8">
 			<div className="flex flex-col items-center justify-center gap-1">
 				<Logo className="size-32 inline-block" />
 				<h1 className="font-mono text-2xl tracking-tight">bicolor</h1>
@@ -23,6 +23,6 @@ export default function Home() {
 					/palette
 				</Link>
 			</nav>
-		</div>
+		</section>
 	);
 }

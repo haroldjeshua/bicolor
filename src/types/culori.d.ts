@@ -24,9 +24,22 @@ declare module "culori" {
     mode: string
   ): (color: Color) => Color;
 
-  export function clampChroma(color: Color, mode?: string): Color;
+  export function clampChroma(
+    color: Color,
+    mode?: string,
+    rgbGamut?: string
+  ): Color;
+
   export function toGamut(params: {
     mode: string;
     method?: string;
   }): (color: Color) => Color;
+
+  export function interpolate(
+    colors: Color[],
+    mode: string,
+    options?: Record<string, unknown>
+  ): (t: number) => Color;
+
+  export function samples(n: number): number[];
 }

@@ -6,7 +6,10 @@ import AgentationWrapper from "@/components/AgentationWrapper";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const geistMonoHeading = Geist_Mono({subsets:['latin'],variable:'--font-heading'});
+const geistMonoHeading = Geist_Mono({
+	subsets: ["latin"],
+	variable: "--font-heading",
+});
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -36,10 +39,16 @@ export default function RootLayout({
 	return (
 		<html
 			lang="en"
-			className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, geistMonoHeading.variable)}
+			className={cn(
+				"h-full",
+				"antialiased",
+				geistSans.variable,
+				geistMono.variable,
+				geistMonoHeading.variable,
+			)}
 			suppressHydrationWarning
 		>
-			<body className="h-full bg-background text-foreground font-sans">
+			<body className="bg-background text-foreground font-sans">
 				<script
 					dangerouslySetInnerHTML={{
 						__html: `document.documentElement.classList.toggle("dark",localStorage.getItem("theme")!=="light")`,
@@ -47,7 +56,7 @@ export default function RootLayout({
 				/>
 				<ActionBarProvider>
 					<Header />
-					<main className="pt-12 pb-10 h-full flex-1">{children}</main>
+					<main className="pt-12 pb-10 flex-1">{children}</main>
 					<ActionBar />
 				</ActionBarProvider>
 				<AgentationWrapper />

@@ -88,7 +88,7 @@ export default function PickerPage() {
 	}, [setContent, eyedropper, copyAll, clear]);
 
 	return (
-		<section className="h-full w-full max-w-5xl m-auto flex flex-col p-4 gap-6 overflow-auto justify-center items-center">
+		<section className="min-h-[calc(100dvh-88px)] h-full w-full max-w-5xl m-auto flex flex-col p-4 gap-6 overflow-auto justify-center items-center">
 			<HexAlphaColorPicker
 				color={color}
 				onChange={setColor}

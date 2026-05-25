@@ -4,6 +4,7 @@ import {
   formatHsl,
   formatCss,
   converter,
+  clampChroma,
   type Color,
 } from "culori";
 import { HTML_COLOR_NAMES, type ColorModel } from "./constants";
@@ -191,4 +192,49 @@ export function alphaFromHex(hex: string): number {
     return Math.round((a / 255) * 1000) / 1000;
   }
   return 1;
+}
+
+export interface PaletteStep {
+  index: number;
+  hex: string;
+  rgb: string;
+  hsl: string;
+  oklch: string;
+  oklab: string;
+  lch: string;
+}
+
+export function generatePalette(seedColor: string): PaletteStep[] {
+  const color = parse(seedColor);
+  if (!color) return [];
+
+  const oklchColor = toOklch(color);
+  if (!oklchColor) return [];
+
+  const chroma = typeof oklchColor.c === "number" ? oklchColor.c : 0.1;
+  const hue = typeof oklchColor.h === "number" ? oklchColor.h : 0;
+
+  const steps: PaletteStep[] = [];
+  const maxLightness = 0.95;
+  const minLightness = 0.05;
+
+  for (let i = 0; i < 11; i++) {
+    const t = i / 10;
+    const l = maxLightness - t * (maxLightness - minLightness);
+
+    const oklchStep = { mode: "oklch" as const, l, c: chroma, h: hue };
+    const clamped = clampChroma(oklchStep);
+
+    steps.push({
+      index: i,
+      hex: serialize(clamped, "hex") ?? "",
+      rgb: serialize(clamped, "rgb") ?? "",
+      hsl: serialize(clamped, "hsl") ?? "",
+      oklch: serialize(clamped, "oklch") ?? "",
+      oklab: serialize(clamped, "oklab") ?? "",
+      lch: serialize(clamped, "lch") ?? "",
+    });
+  }
+
+  return steps;
 }

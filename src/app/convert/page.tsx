@@ -1,6 +1,13 @@
 "use client";
 
-import { Suspense, useState, useCallback, useEffect, useRef, useMemo } from "react";
+import {
+	Suspense,
+	useState,
+	useCallback,
+	useEffect,
+	useRef,
+	useMemo,
+} from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import ColorInput from "@/components/ColorInput";
 import ColorSwatch from "@/components/ColorSwatch";
@@ -171,7 +178,7 @@ function ConvertPageContent() {
 	}, []);
 
 	return (
-		<section className="h-full w-full max-w-5xl m-auto flex flex-col p-4 gap-4 overflow-auto items-center justify-center">
+		<section className="min-h-[calc(100dvh-88px)] h-full w-full max-w-5xl m-auto flex flex-col p-4 gap-4 overflow-auto items-center justify-center">
 			<div className="flex flex-col sm:flex-row items-center gap-4 w-full max-w-3xl">
 				<div className="flex-1 flex items-center gap-3 w-full">
 					<div className="relative flex items-center shrink-0">
