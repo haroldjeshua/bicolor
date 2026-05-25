@@ -12,9 +12,8 @@ Zero-overhead color tool for design engineers. oklch-first, CSS framework-agnost
 - Next.js 16 App Router + TypeScript + pnpm
 - Tailwind v4 CSS-first (no config file)
 - shadcn color convention (`.dark` class, `bg-background`/`text-foreground` etc.)
-- motion v11+ from "motion/react"
 - culori for color math
-- react-colorful (HexAlphaColorPicker + HexColorInput)
+- react-colorful (HexAlphaColorPicker, HexColorInput, HexColorPicker)
 - URL search params for shareable state
 - ActionBar via split React Contexts
 - vitest + @testing-library/react
@@ -29,7 +28,7 @@ Zero-overhead color tool for design engineers. oklch-first, CSS framework-agnost
 
 ### Convert page layout
 ```
-[ColorSwatch (clickable→native color picker) + ColorInput A (editable)] [Swap] [ColorInput B (readonly)]
+[ColorSwatch (clickable→react-colorful popover) + ColorInput A (editable)] [Swap] [ColorInput B (readonly)]
 ```
 - A = source (always editable), B = target (always readonly, model selector still interactive)
 - Swap exchanges values between A and B (no animations)
