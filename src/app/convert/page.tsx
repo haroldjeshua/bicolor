@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useCallback, useEffect, useRef } from "react";
+import { Suspense, useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import ColorInput from "@/components/ColorInput";
 import ColorSwatch from "@/components/ColorSwatch";
@@ -68,6 +68,11 @@ function ConvertPageContent() {
 
 	const [showPicker, setShowPicker] = useState(false);
 	const pickerRef = useRef<HTMLDivElement>(null);
+
+	const pickerColor = useMemo(
+		() => convert(state.aValue, state.aModel, "hex") ?? "#000000",
+		[state.aValue, state.aModel],
+	);
 
 	useEffect(() => {
 		if (!showPicker) return;
@@ -184,7 +189,7 @@ function ConvertPageContent() {
 								className="absolute top-full left-0 mt-2 z-50 p-1.5 border border-border rounded-xl bg-background"
 							>
 								<HexColorPicker
-									color={state.aValue}
+									color={pickerColor}
 									onChange={handleColorPick}
 									className="rounded-lg"
 								/>
