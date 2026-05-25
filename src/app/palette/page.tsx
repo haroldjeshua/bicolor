@@ -120,7 +120,7 @@ function PalettePageContent() {
 		return () => document.removeEventListener("mousedown", close);
 	}, [showPicker]);
 
-	const steps = useMemo(() => generatePalette(seed), [seed]);
+	const { steps, seedStep } = useMemo(() => generatePalette(seed), [seed]);
 
 	const syncUrl = useCallback(
 		(s: string, m: ColorModel) => {
@@ -279,10 +279,16 @@ function PalettePageContent() {
 						{steps.map((s) => (
 							<div
 								key={s.index}
-								className="flex-1 h-10"
+								className={`flex-1 h-14 relative ${s.index === seedStep ? "ring-1 ring-inset ring-foreground/40" : ""}`}
 								style={{ background: s.hex }}
 								title={`${s.index}: ${s[displayModel as keyof PaletteStep] as string}`}
-							/>
+							>
+								{s.index === seedStep && (
+									<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+										<div className="w-2 h-2 rounded-full bg-foreground ring-[1.5px] ring-background" />
+									</div>
+								)}
+							</div>
 						))}
 					</div>
 
@@ -290,7 +296,7 @@ function PalettePageContent() {
 						<div className="grid grid-cols-[3rem_1fr_5rem] gap-2 px-3 py-1.5 text-muted-foreground/50 uppercase tracking-wider">
 							<span>Step</span>
 							<span>{MODEL_LABELS[displayModel]}</span>
-							<span className="text-right">Hex</span>
+							{displayModel !== "hex" && <span className="text-right">Hex</span>}
 						</div>
 						{steps.map((s) => {
 							const displayVal = s[displayModel as keyof PaletteStep] as string;
@@ -304,27 +310,49 @@ function PalettePageContent() {
 											className="w-6 h-6 rounded-sm shrink-0 border border-border/30"
 											style={{ background: s.hex }}
 										/>
-										<span className="text-muted-foreground">{s.index}</span>
+										<span
+											className={`text-muted-foreground relative ${s.index === seedStep ? "after:absolute after:-right-2.5 after:top-1/2 after:-translate-y-1/2 after:w-1 after:h-1 after:rounded-full after:bg-foreground/60" : ""}`}
+										>
+											{s.index}
+										</span>
 									</div>
 									<span className="truncate text-foreground tracking-tight">
 										{displayVal}
 									</span>
-									<div className="flex items-center gap-1 justify-end">
-										<span className="truncate text-muted-foreground">{s.hex}</span>
-										<button
-											onClick={() => copyStepValue(s.index, displayVal)}
-											className="shrink-0 text-muted-foreground hover:text-foreground transition-colors cursor-pointer p-0.5"
-											aria-label={`Copy step ${s.index}`}
-										>
-											{copiedIndex === s.index ? (
-												<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-													<polyline points="20 6 9 17 4 12" />
-												</svg>
-											) : (
-												<CopySimple size={12} />
-											)}
-										</button>
-									</div>
+									{displayModel !== "hex" ? (
+										<div className="flex items-center gap-1 justify-end">
+											<span className="truncate text-muted-foreground">{s.hex}</span>
+											<button
+												onClick={() => copyStepValue(s.index, displayVal)}
+												className="shrink-0 text-muted-foreground hover:text-foreground transition-colors cursor-pointer p-0.5"
+												aria-label={`Copy step ${s.index}`}
+											>
+												{copiedIndex === s.index ? (
+													<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+														<polyline points="20 6 9 17 4 12" />
+													</svg>
+												) : (
+													<CopySimple size={12} />
+												)}
+											</button>
+										</div>
+									) : (
+										<div className="flex items-center gap-1 justify-end">
+											<button
+												onClick={() => copyStepValue(s.index, displayVal)}
+												className="shrink-0 text-muted-foreground hover:text-foreground transition-colors cursor-pointer p-0.5"
+												aria-label={`Copy step ${s.index}`}
+											>
+												{copiedIndex === s.index ? (
+													<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+														<polyline points="20 6 9 17 4 12" />
+													</svg>
+												) : (
+													<CopySimple size={12} />
+												)}
+											</button>
+										</div>
+									)}
 								</div>
 							);
 						})}

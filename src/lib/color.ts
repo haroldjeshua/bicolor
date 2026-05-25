@@ -204,37 +204,57 @@ export interface PaletteStep {
   lch: string;
 }
 
-export function generatePalette(seedColor: string): PaletteStep[] {
+export function generatePalette(seedColor: string): {
+  steps: PaletteStep[];
+  seedStep: number;
+} {
   const color = parse(seedColor);
-  if (!color) return [];
+  if (!color) return { steps: [], seedStep: -1 };
 
   const oklchColor = toOklch(color);
-  if (!oklchColor) return [];
+  if (!oklchColor) return { steps: [], seedStep: -1 };
 
+  const seedL = typeof oklchColor.l === "number" ? oklchColor.l : 0.5;
   const chroma = typeof oklchColor.c === "number" ? oklchColor.c : 0.1;
   const hue = typeof oklchColor.h === "number" ? oklchColor.h : 0;
 
-  const steps: PaletteStep[] = [];
   const maxLightness = 0.95;
   const minLightness = 0.05;
+  const seedT = (maxLightness - seedL) / (maxLightness - minLightness);
+  const seedStep = Math.round(Math.max(0, Math.min(10, seedT * 10)));
+
+  const steps: PaletteStep[] = [];
 
   for (let i = 0; i < 11; i++) {
     const t = i / 10;
     const l = maxLightness - t * (maxLightness - minLightness);
 
-    const oklchStep = { mode: "oklch" as const, l, c: chroma, h: hue };
-    const clamped = clampChroma(oklchStep);
+    if (i === seedStep) {
+      const hex = formatHexWithAlpha(color);
+      steps.push({
+        index: i,
+        hex,
+        rgb: serialize(color, "rgb") ?? "",
+        hsl: serialize(color, "hsl") ?? "",
+        oklch: serialize(color, "oklch") ?? "",
+        oklab: serialize(color, "oklab") ?? "",
+        lch: serialize(color, "lch") ?? "",
+      });
+    } else {
+      const oklchStep = { mode: "oklch" as const, l, c: chroma, h: hue };
+      const clamped = clampChroma(oklchStep);
 
-    steps.push({
-      index: i,
-      hex: serialize(clamped, "hex") ?? "",
-      rgb: serialize(clamped, "rgb") ?? "",
-      hsl: serialize(clamped, "hsl") ?? "",
-      oklch: serialize(clamped, "oklch") ?? "",
-      oklab: serialize(clamped, "oklab") ?? "",
-      lch: serialize(clamped, "lch") ?? "",
-    });
+      steps.push({
+        index: i,
+        hex: serialize(clamped, "hex") ?? "",
+        rgb: serialize(clamped, "rgb") ?? "",
+        hsl: serialize(clamped, "hsl") ?? "",
+        oklch: serialize(clamped, "oklch") ?? "",
+        oklab: serialize(clamped, "oklab") ?? "",
+        lch: serialize(clamped, "lch") ?? "",
+      });
+    }
   }
 
-  return steps;
+  return { steps, seedStep };
 }
