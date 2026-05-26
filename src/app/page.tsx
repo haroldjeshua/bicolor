@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 	openGraph: {
 		title: "bicolor — pick. convert. palette.",
 		description:
-			"A direct, zero-overhead color tool for designers and developers.",
+			"A deadsimple, zero-overhead color tool for designers and developers.",
 	},
 };
 
@@ -25,7 +25,7 @@ export default function Home() {
 					</Link>
 					<h1 className="font-mono text-2xl tracking-tight">bicolor</h1>
 					<p className="text-muted-foreground/40 text-sm font-mono text-center leading-relaxed">
-						a direct, zero-overhead color tool for designers and developers
+						a deadsimple, zero-overhead color tool for designers and developers
 					</p>
 				</div>
 

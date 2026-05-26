@@ -201,7 +201,7 @@ export default function Header() {
 					<DialogHeader>
 						<DialogTitle>bicolor</DialogTitle>
 						<DialogDescription>
-							A direct, zero-overhead color tool for design engineers. Pick
+							A deadsimple, zero-overhead color tool for design engineers. Pick
 							colors, convert between oklch/rgb/hsl/hex, and generate harmonious
 							palettes &mdash; all with URL-shareable state.
 						</DialogDescription>

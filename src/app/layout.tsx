@@ -8,6 +8,7 @@ import { DemoColorSync } from "@/components/DemoColorSync";
 import AgentationWrapper from "@/components/AgentationWrapper";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { Analytics } from "@vercel/analytics/next";
 
 const geistMonoHeading = Geist_Mono({
 	subsets: ["latin"],
@@ -27,7 +28,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
 	title: "bicolor — Pick. Convert. Palette.",
 	description:
-		"A direct, zero-overhead color tool for designers and developers. Pick colors, convert between models, generate palettes.",
+		"A deadsimple, zero-overhead color tool for designers and developers. Pick colors, convert between models, generate palettes.",
 };
 
 export const viewport: Viewport = {
@@ -52,7 +53,12 @@ export default function RootLayout({
 			suppressHydrationWarning
 		>
 			<body className="bg-background text-foreground font-sans">
-				<ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+				<ThemeProvider
+					attribute="class"
+					defaultTheme="dark"
+					enableSystem
+					disableTransitionOnChange
+				>
 					<ActionBarProvider>
 						<Header />
 						<main className="pt-12 pb-10 flex-1">{children}</main>
@@ -62,6 +68,7 @@ export default function RootLayout({
 					<AgentationWrapper />
 					<ThemeAwareToaster />
 				</ThemeProvider>
+				<Analytics />
 			</body>
 		</html>
 	);
