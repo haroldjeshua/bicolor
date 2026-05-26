@@ -8,6 +8,14 @@ import {
 } from "@/lib/constants";
 import { convertAll, findClosestNamedColor } from "@/lib/color";
 import CopyButton from "./CopyButton";
+import { InfoIcon } from "@phosphor-icons/react";
+import {
+	Popover,
+	PopoverContent,
+	PopoverDescription,
+	PopoverTitle,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface ModelGridProps {
 	value: string;
@@ -44,12 +52,29 @@ export default function ModelGrid({ value, model }: ModelGridProps) {
 				);
 			})}
 			<div className="flex items-center gap-3 px-3 py-1.5 rounded-sm text-muted-foreground">
-				<span className="w-12 shrink-0 uppercase" title="HTML named color">
-					Named
-				</span>
+				<span className="w-12 shrink-0 uppercase">Named</span>
 				<span className="flex-1 truncate capitalize">
 					{namedColor?.name ?? "\u2014"}
 				</span>
+
+				<Popover>
+					<PopoverTrigger asChild>
+						<button
+							className="text-muted-foreground/40 hover:text-foreground transition-colors cursor-pointer"
+							aria-label="About named colors"
+						>
+							<InfoIcon size={12} />
+						</button>
+					</PopoverTrigger>
+					<PopoverContent side="top" align="end" className="font-mono">
+						<PopoverTitle>Nearest named color</PopoverTitle>
+						<PopoverDescription>
+							This is the closest X11/CSS named color matched by RGB distance.
+							It is not the exact color name &mdash; most hex values don&apos;t
+							have a corresponding named equivalent.
+						</PopoverDescription>
+					</PopoverContent>
+				</Popover>
 				<span className="text-xs font-mono text-muted-foreground/50">
 					{namedColor?.hex ?? ""}
 				</span>

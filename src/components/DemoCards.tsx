@@ -91,29 +91,30 @@ function PickerDemo({
 function ConvertDemo({ color }: { color: string }) {
 	const [model, setModel] = useState<ColorModel>("hex");
 	const targetModel: ColorModel = model === "hex" ? "oklch" : "hex";
-	const synced = convert(color, "hex", model) ?? color;
-	const [value, setValue] = useState(synced);
+	const [value, setValue] = useState(() => convert(color, "hex", model) ?? color);
+
+	useEffect(() => {
+		setValue(convert(color, "hex", model) ?? color);
+	}, [color, model]);
 
 	const result = convert(value, model, targetModel);
 
 	return (
-		<div
-			className="flex flex-col items-center gap-2 w-full max-w-56"
-			key={`${color}-${model}`}
-		>
-			<div className="flex items-center gap-1.5 w-full">
+		<div className="flex flex-col items-center gap-2 w-full max-w-64">
+			<div className="flex items-center gap-0 w-full">
 				<input
 					type="text"
 					value={value}
 					onChange={(e) => setValue(e.target.value)}
-					className="flex-1 h-7 bg-transparent border border-border rounded-sm px-1.5 font-mono text-xs text-foreground outline-none focus:border-ring transition-colors"
+					className="flex-1 h-9 bg-transparent border border-border rounded-sm px-1.5 font-mono text-xs text-foreground outline-none focus:border-ring transition-colors"
 					spellCheck={false}
 					aria-label="Color value"
 				/>
 				<Select value={model} onValueChange={(v) => setModel(v as ColorModel)}>
 					<SelectTrigger
-						className="h-7 font-mono text-xs"
+						className="h-9 font-mono text-xs"
 						aria-label="Color model"
+						style={{ height: 36 }}
 					>
 						<SelectValue />
 					</SelectTrigger>
@@ -132,7 +133,9 @@ function ConvertDemo({ color }: { color: string }) {
 			</div>
 			<div className="flex items-center gap-1.5 font-mono text-xs">
 				<ColorSwatch color={result ?? ""} size="sm" />
-				<span className="text-foreground">{result || "\u2014"}</span>
+				<span className="text-foreground text-[10px]">
+					{result || "\u2014"}
+				</span>
 				<span className="text-muted-foreground">
 					({MODEL_LABELS[targetModel]})
 				</span>
@@ -178,15 +181,15 @@ export function DemoCards() {
 
 	return (
 		<div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
-			<div className="flex flex-col items-center gap-3">
+			<div className="flex flex-col items-center gap-8">
 				<SectionLink href="/picker" label="Pick" color={color} />
 				<PickerDemo color={color} onChange={setColor} />
 			</div>
-			<div className="flex flex-col items-center gap-3">
+			<div className="flex flex-col items-center gap-8">
 				<SectionLink href="/convert" label="Convert" color={color} />
 				<ConvertDemo color={color} />
 			</div>
-			<div className="flex flex-col items-center gap-3">
+			<div className="flex flex-col items-center gap-8">
 				<SectionLink href="/palette" label="Palette" color={color} />
 				<PaletteDemo color={color} />
 			</div>

@@ -223,6 +223,8 @@ export function generatePalette(seedColor: string): {
   const seedT = (maxLightness - seedL) / (maxLightness - minLightness);
   const seedStep = Math.round(Math.max(0, Math.min(10, seedT * 10)));
 
+  const maxDist = Math.max(seedStep, 10 - seedStep);
+
   const steps: PaletteStep[] = [];
 
   for (let i = 0; i < 11; i++) {
@@ -241,7 +243,10 @@ export function generatePalette(seedColor: string): {
         lch: serialize(color, "lch") ?? "",
       });
     } else {
-      const oklchStep = { mode: "oklch" as const, l, c: chroma, h: hue };
+      const dist = Math.abs(i - seedStep) / maxDist;
+      const mult = 1 - dist * dist * (1 - 0.08);
+      const c = chroma * mult;
+      const oklchStep = { mode: "oklch" as const, l, c, h: hue };
       const clamped = clampChroma(oklchStep);
 
       steps.push({

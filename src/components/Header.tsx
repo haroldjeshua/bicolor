@@ -5,6 +5,20 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Logo } from "./Logo";
 import { EqualsIcon, MoonStarsIcon, SunDimIcon } from "@phosphor-icons/react";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const NAV_ITEMS = [
 	{ href: "/picker", label: "picker" },
@@ -15,13 +29,14 @@ const NAV_ITEMS = [
 export default function Header() {
 	const pathname = usePathname();
 	const [menuOpen, setMenuOpen] = useState(false);
+	const [aboutOpen, setAboutOpen] = useState(false);
+	const [wipOpen, setWipOpen] = useState(false);
 
 	const toggleDark = () => {
 		const isDark = document.documentElement.classList.toggle("dark");
 		localStorage.setItem("theme", isDark ? "dark" : "light");
 	};
 
-	// close mobile menu on outside click
 	useEffect(() => {
 		if (!menuOpen) return;
 		const close = () => setMenuOpen(false);
@@ -73,6 +88,50 @@ export default function Header() {
 						</span>
 					</button>
 
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<button className="cursor-pointer font-mono text-xs tracking-wide uppercase text-muted-foreground hover:text-foreground transition-colors">
+								More
+							</button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end" className="min-w-40 font-mono text-xs">
+							<DropdownMenuItem onSelect={() => setAboutOpen(true)}>
+								About
+							</DropdownMenuItem>
+							<DropdownMenuItem onSelect={() => setWipOpen(true)}>
+								WIP
+							</DropdownMenuItem>
+							<DropdownMenuSeparator />
+							<DropdownMenuItem asChild>
+								<a href="https://github.com/haroldjeshua/bicolor" target="_blank" rel="noopener noreferrer">
+									GitHub
+								</a>
+							</DropdownMenuItem>
+							<DropdownMenuItem asChild>
+								<a href="https://x.com/haroldjeshua" target="_blank" rel="noopener noreferrer">
+									X / Twitter
+								</a>
+							</DropdownMenuItem>
+							<DropdownMenuSeparator />
+							<DropdownMenuItem asChild>
+								<a href="mailto:hello@harv.computer" target="_blank" rel="noopener noreferrer">
+									Contact
+								</a>
+							</DropdownMenuItem>
+							<DropdownMenuItem asChild>
+								<a href="mailto:hello@harv.computer?subject=Bicolor%20Feedback" target="_blank" rel="noopener noreferrer">
+									Feedback
+								</a>
+							</DropdownMenuItem>
+							<DropdownMenuSeparator />
+							<DropdownMenuItem asChild>
+								<a href="https://buymeacoffee.com/haroldjeshua" target="_blank" rel="noopener noreferrer">
+									Buy me a coffee
+								</a>
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
+
 					<button
 						onClick={(e) => {
 							e.stopPropagation();
@@ -107,6 +166,74 @@ export default function Header() {
 					))}
 				</div>
 			)}
+
+			<Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>bicolor</DialogTitle>
+						<DialogDescription>
+							A direct, zero-overhead color tool for design engineers.
+							Pick colors, convert between oklch/rgb/hsl/hex, and
+							generate harmonious palettes &mdash; all with
+							URL-shareable state.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="font-mono text-[10px] text-muted-foreground space-y-1">
+						<p>
+							Built by{" "}
+							<a
+								href="https://harv.computer"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-foreground hover:underline"
+							>
+								Harv
+							</a>{" "}
+							in Bicol, Philippines
+						</p>
+						<p>
+							MIT License &mdash;{" "}
+							<a
+								href="https://github.com/haroldjeshua/bicolor"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-foreground hover:underline"
+							>
+								GitHub
+							</a>
+						</p>
+						<p className="pt-2 text-muted-foreground/60">
+							oklch &middot; culori &middot; Next.js &middot; Tailwind v4
+						</p>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={wipOpen} onOpenChange={setWipOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Coming soon</DialogTitle>
+						<DialogDescription>
+							Features in the pipeline.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-3">
+						{([
+							["/gradient", "Gradient generator — blend between colors with full control"],
+							["\u2B50 Saved", "Save and organize your color palette library"],
+							["\uD83D\uDD11 Login", "Sync palettes across devices with your account"],
+							["\uD83C\uDFA8 Harmony", "Complementary, analogous, triadic color schemes"],
+							["\uD83D\uDCA1 Contrast", "WCAG accessibility checker for your color combos"],
+							["\uD83D\uDCCB Tokens", "Export design tokens for Tailwind, CSS, Figma"],
+						] as const).map(([label, desc]) => (
+							<div key={label} className="font-mono text-[10px]">
+								<p className="text-foreground">{label}</p>
+								<p className="text-muted-foreground">{desc}</p>
+							</div>
+						))}
+					</div>
+				</DialogContent>
+			</Dialog>
 		</header>
 	);
 }

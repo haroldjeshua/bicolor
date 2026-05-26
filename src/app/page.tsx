@@ -5,11 +5,11 @@ import { DemoCards } from "@/components/DemoCards";
 import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
-	title: "bicolor — Pick. Convert. Palette.",
+	title: "bicolor — pick. convert. palette.",
 	description:
 		"Pick colors from a live color picker, convert between oklch/rgb/hsl/hex, and generate harmonious palettes.",
 	openGraph: {
-		title: "bicolor — Pick. Convert. Palette.",
+		title: "bicolor — pick. convert. palette.",
 		description:
 			"A direct, zero-overhead color tool for designers and developers.",
 	},
@@ -24,28 +24,6 @@ export default function Home() {
 						<Logo className="size-24 inline-block" />
 					</Link>
 					<h1 className="font-mono text-2xl tracking-tight">bicolor</h1>
-					<div className="flex items-center gap-2 text-muted-foreground font-mono text-sm">
-						<Link
-							href="/picker"
-							className="hover:text-foreground transition-colors"
-						>
-							Pick
-						</Link>
-						<span className="text-muted-foreground/40">.</span>
-						<Link
-							href="/convert"
-							className="hover:text-foreground transition-colors"
-						>
-							Convert
-						</Link>
-						<span className="text-muted-foreground/40">.</span>
-						<Link
-							href="/palette"
-							className="hover:text-foreground transition-colors"
-						>
-							Palette
-						</Link>
-					</div>
 					<p className="text-muted-foreground/40 text-sm font-mono text-center leading-relaxed">
 						a direct, zero-overhead color tool for designers and developers
 					</p>
