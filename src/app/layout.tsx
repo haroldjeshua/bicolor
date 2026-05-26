@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
-import { Toaster } from "sileo";
 import { ActionBarProvider, ActionBar } from "@/components/ActionBar";
+import ThemeAwareToaster from "@/components/ThemeAwareToaster";
 import Header from "@/components/Header";
 import { DemoColorSync } from "@/components/DemoColorSync";
 import AgentationWrapper from "@/components/AgentationWrapper";
@@ -60,18 +60,7 @@ export default function RootLayout({
 					</ActionBarProvider>
 					<DemoColorSync />
 					<AgentationWrapper />
-					<Toaster
-						position="bottom-center"
-						offset={72}
-						options={{
-							fill: "#18181b",
-							roundness: 8,
-							styles: {
-								title: "text-white! font-mono! text-xs!",
-								badge: "bg-white/10!",
-							},
-						}}
-					/>
+					<ThemeAwareToaster />
 				</ThemeProvider>
 			</body>
 		</html>

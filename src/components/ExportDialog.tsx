@@ -2,9 +2,8 @@
 
 import { useCallback, useMemo } from "react";
 import { sileo } from "sileo";
-import { CopySimpleIcon, DownloadSimpleIcon, ShareNetworkIcon } from "@phosphor-icons/react";
+import { CopySimpleIcon } from "@phosphor-icons/react";
 import { convertAll } from "@/lib/color";
-import { downloadColorCard, shareColorCard } from "@/lib/export-image";
 import {
 	Dialog,
 	DialogContent,
@@ -95,33 +94,11 @@ export default function ExportDialog({
 		[getFormatted],
 	);
 
-	const handleDownload = useCallback(async () => {
-		try {
-			await downloadColorCard(color, values);
-			sileo.success({ title: "Image downloaded" });
-		} catch {
-			sileo.error({ title: "Download failed" });
-		}
-	}, [color, values]);
-
-	const handleShare = useCallback(async () => {
-		try {
-			const shared = await shareColorCard(color, values);
-			if (shared) {
-				sileo.success({ title: "Shared" });
-			}
-		} catch {
-			// user cancelled
-		}
-	}, [color, values]);
-
-	const supportsShare = typeof navigator !== "undefined" && "share" in navigator;
-
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
-					<DialogTitle>Export color</DialogTitle>
+					<DialogTitle>Copy color</DialogTitle>
 				</DialogHeader>
 
 				<div className="flex items-center gap-3">
@@ -168,19 +145,6 @@ export default function ExportDialog({
 						</TabsContent>
 					))}
 				</Tabs>
-
-				<div className="flex items-center gap-2 justify-end">
-					<Button variant="outline" size="sm" onClick={handleDownload}>
-						<DownloadSimpleIcon />
-						Download image
-					</Button>
-					{supportsShare && (
-						<Button variant="outline" size="sm" onClick={handleShare}>
-							<ShareNetworkIcon />
-							Share
-						</Button>
-					)}
-				</div>
 			</DialogContent>
 		</Dialog>
 	);

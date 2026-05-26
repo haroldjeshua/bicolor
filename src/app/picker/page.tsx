@@ -9,9 +9,11 @@ import { useActionBar } from "@/components/ActionBar";
 import { Button } from "@/components/ui/button";
 import { GamutBadge } from "@/components/GamutBadge";
 import ExportDialog from "@/components/ExportDialog";
+import ImagePreviewDialog from "@/components/ImagePreviewDialog";
 import {
 	EyedropperIcon,
-	ExportIcon,
+	CopySimpleIcon,
+	ImageSquareIcon,
 	ArrowCounterClockwiseIcon,
 } from "@phosphor-icons/react";
 
@@ -24,7 +26,8 @@ function PickerContent() {
 		if (param && /^#[0-9a-f]{6}/i.test(param)) return param;
 		return DEFAULT_COLOR;
 	});
-	const [exportOpen, setExportOpen] = useState(false);
+	const [copyOpen, setCopyOpen] = useState(false);
+	const [previewOpen, setPreviewOpen] = useState(false);
 	const { setContent } = useActionBar();
 
 	const clear = useCallback(() => {
@@ -65,12 +68,22 @@ function PickerContent() {
 				<Button
 					variant="bare"
 					size="sm"
-					onClick={() => setExportOpen(true)}
+					onClick={() => setCopyOpen(true)}
 					className="text-background/60 hover:text-muted"
-					aria-label="Export color values"
+					aria-label="Copy color values"
 				>
-					<ExportIcon size={14} />
-					<span className="hidden md:inline">Export</span>
+					<CopySimpleIcon size={14} />
+					<span className="hidden md:inline">Copy</span>
+				</Button>
+				<Button
+					variant="bare"
+					size="sm"
+					onClick={() => setPreviewOpen(true)}
+					className="text-background/60 hover:text-muted"
+					aria-label="Download color image"
+				>
+					<ImageSquareIcon size={14} />
+					<span className="hidden md:inline">Image</span>
 				</Button>
 				<Button
 					variant="bare"
@@ -112,9 +125,10 @@ function PickerContent() {
 
 			<ModelGrid value={color} model="hex" />
 
-			<ExportDialog
-				open={exportOpen}
-				onOpenChange={setExportOpen}
+			<ExportDialog open={copyOpen} onOpenChange={setCopyOpen} color={color} />
+			<ImagePreviewDialog
+				open={previewOpen}
+				onOpenChange={setPreviewOpen}
 				color={color}
 			/>
 		</section>
