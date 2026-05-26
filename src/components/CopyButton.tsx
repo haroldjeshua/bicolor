@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
+import { sileo } from "sileo";
 
 interface CopyButtonProps {
   value: string;
@@ -8,25 +9,12 @@ interface CopyButtonProps {
 }
 
 export default function CopyButton({ value, label = "Copy" }: CopyButtonProps) {
-  const [copied, setCopied] = useState(false);
-
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // silently fail
-    }
+      sileo.success({ title: "Copied" });
+    } catch {}
   }, [value]);
-
-  if (copied) {
-    return (
-      <span className="w-16 text-xs font-mono text-success pointer-events-none select-none text-right">
-        Copied ✓
-      </span>
-    );
-  }
 
   return (
     <button

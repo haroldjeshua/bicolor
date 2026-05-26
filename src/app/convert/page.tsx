@@ -17,6 +17,7 @@ import { useActionBar } from "@/components/ActionBar";
 import { Button } from "@/components/ui/button";
 import { convert } from "@/lib/color";
 import { HexColorPicker } from "react-colorful";
+import { sileo } from "sileo";
 import { SwapIcon, LinkSimpleIcon, CopySimpleIcon } from "@phosphor-icons/react";
 import { type ColorModel } from "@/lib/constants";
 
@@ -113,6 +114,7 @@ function ConvertPageContent() {
 	const handleShareUrl = useCallback(async () => {
 		try {
 			await navigator.clipboard.writeText(window.location.href);
+			sileo.success({ title: "URL copied" });
 		} catch {}
 	}, []);
 
@@ -121,6 +123,7 @@ function ConvertPageContent() {
 		if (val) {
 			try {
 				await navigator.clipboard.writeText(val);
+				sileo.success({ title: "Copied" });
 			} catch {}
 		}
 	}, [state]);

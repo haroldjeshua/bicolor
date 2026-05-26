@@ -1,18 +1,19 @@
 "use client";
 
-import { Suspense, useState, useCallback, useEffect, useRef } from "react";
+import { Suspense, useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { sileo } from "sileo";
 import { HexAlphaColorPicker, HexColorInput } from "react-colorful";
 import ModelGrid from "@/components/ModelGrid";
 import { useActionBar } from "@/components/ActionBar";
 import { Button } from "@/components/ui/button";
 import { GamutBadge } from "@/components/GamutBadge";
+import ExportDialog from "@/components/ExportDialog";
 import {
 	EyedropperIcon,
-	CopySimpleIcon,
+	ExportIcon,
 	ArrowCounterClockwiseIcon,
 } from "@phosphor-icons/react";
-import { convertAll } from "@/lib/color";
 
 const DEFAULT_COLOR = "#1a2b3c";
 
@@ -23,28 +24,8 @@ function PickerContent() {
 		if (param && /^#[0-9a-f]{6}/i.test(param)) return param;
 		return DEFAULT_COLOR;
 	});
+	const [exportOpen, setExportOpen] = useState(false);
 	const { setContent } = useActionBar();
-
-	const colorRef = useRef(color);
-	useEffect(() => {
-		colorRef.current = color;
-	}, [color]);
-
-	const copyAll = useCallback(async () => {
-		const c = colorRef.current;
-		const values = convertAll(c, "hex");
-		const lines = [
-			`hex: ${values.hex ?? "\u2014"}`,
-			`rgb: ${values.rgb ?? "\u2014"}`,
-			`hsl: ${values.hsl ?? "\u2014"}`,
-			`oklch: ${values.oklch ?? "\u2014"}`,
-			`oklab: ${values.oklab ?? "\u2014"}`,
-			`lch: ${values.lch ?? "\u2014"}`,
-		];
-		try {
-			await navigator.clipboard.writeText(lines.join("\n"));
-		} catch {}
-	}, []);
 
 	const clear = useCallback(() => {
 		setColor(DEFAULT_COLOR);
@@ -62,6 +43,7 @@ function PickerContent() {
 			const dropper = new EyeDropper();
 			const result = await dropper.open();
 			setColor(result.sRGBHex);
+			sileo.success({ title: "Picked", description: result.sRGBHex });
 		} catch {
 			// user cancelled or browser unsupported
 		}
@@ -83,12 +65,12 @@ function PickerContent() {
 				<Button
 					variant="bare"
 					size="sm"
-					onClick={copyAll}
+					onClick={() => setExportOpen(true)}
 					className="text-background/60 hover:text-muted"
-					aria-label="Copy all color values"
+					aria-label="Export color values"
 				>
-					<CopySimpleIcon size={14} />
-					<span className="hidden md:inline">Copy all</span>
+					<ExportIcon size={14} />
+					<span className="hidden md:inline">Export</span>
 				</Button>
 				<Button
 					variant="bare"
@@ -103,7 +85,7 @@ function PickerContent() {
 			</>,
 		);
 		return () => setContent(null);
-	}, [setContent, eyedropper, copyAll, clear]);
+	}, [setContent, eyedropper, clear]);
 
 	useEffect(() => {
 		syncLogoColor(color);
@@ -129,6 +111,12 @@ function PickerContent() {
 			</div>
 
 			<ModelGrid value={color} model="hex" />
+
+			<ExportDialog
+				open={exportOpen}
+				onOpenChange={setExportOpen}
+				color={color}
+			/>
 		</section>
 	);
 }

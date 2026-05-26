@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { generatePalette, convert, type PaletteStep } from "@/lib/color";
 import { type ColorModel, MODEL_LABELS } from "@/lib/constants";
 import { HexColorPicker } from "react-colorful";
+import { sileo } from "sileo";
 import {
 	ArrowCounterClockwiseIcon,
 	LinkSimpleIcon,
@@ -154,20 +155,14 @@ function PalettePageContent() {
 	const handleShare = useCallback(async () => {
 		try {
 			await navigator.clipboard.writeText(window.location.href);
+			sileo.success({ title: "URL copied" });
 		} catch {}
 	}, []);
 
 	const handleDownloadImage = useCallback(() => {
 		downloadSVG(steps);
+		sileo.success({ title: "Image downloaded" });
 	}, [steps]);
-
-	const [actionCopied, setActionCopied] = useState<string | null>(null);
-
-	const handleActionCopy = useCallback((label: string, fn: () => void) => {
-		fn();
-		setActionCopied(label);
-		setTimeout(() => setActionCopied(null), 1500);
-	}, []);
 
 	useEffect(() => {
 		setContent(
@@ -185,7 +180,7 @@ function PalettePageContent() {
 				<Button
 					variant="bare"
 					size="sm"
-					onClick={() => handleActionCopy("share", handleShare)}
+					onClick={handleShare}
 					className="text-background/60 hover:text-muted"
 					aria-label="Copy share URL"
 				>
@@ -209,12 +204,9 @@ function PalettePageContent() {
 		handleReset,
 		handleShare,
 		handleDownloadImage,
-		actionCopied,
-		handleActionCopy,
 		setContent,
 	]);
 
-	const [tabCopied, setTabCopied] = useState(false);
 	const [activeTab, setActiveTab] = useState("css");
 
 	const copyTabContent = useCallback(async () => {
@@ -225,18 +217,14 @@ function PalettePageContent() {
 		else text = formatJSON(steps);
 		try {
 			await navigator.clipboard.writeText(text);
-			setTabCopied(true);
-			setTimeout(() => setTabCopied(false), 1500);
+			sileo.success({ title: "Copied" });
 		} catch {}
 	}, [activeTab, steps, displayModel]);
 
-	const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-
-	const copyStepValue = useCallback(async (i: number, value: string) => {
+	const copyStepValue = useCallback(async (_i: number, value: string) => {
 		try {
 			await navigator.clipboard.writeText(value);
-			setCopiedIndex(i);
-			setTimeout(() => setCopiedIndex(null), 1500);
+			sileo.success({ title: "Copied" });
 		} catch {}
 	}, []);
 
@@ -350,22 +338,7 @@ function PalettePageContent() {
 												className="shrink-0 text-muted-foreground hover:text-foreground transition-colors cursor-pointer p-0.5"
 												aria-label={`Copy step ${s.index}`}
 											>
-												{copiedIndex === s.index ? (
-													<svg
-														width="12"
-														height="12"
-														viewBox="0 0 24 24"
-														fill="none"
-														stroke="currentColor"
-														strokeWidth="2"
-														strokeLinecap="round"
-														strokeLinejoin="round"
-													>
-														<polyline points="20 6 9 17 4 12" />
-													</svg>
-												) : (
-													<CopySimpleIcon size={12} />
-												)}
+												<CopySimpleIcon size={12} />
 											</button>
 										</div>
 									) : (
@@ -375,22 +348,7 @@ function PalettePageContent() {
 												className="shrink-0 text-muted-foreground hover:text-foreground transition-colors cursor-pointer p-0.5"
 												aria-label={`Copy step ${s.index}`}
 											>
-												{copiedIndex === s.index ? (
-													<svg
-														width="12"
-														height="12"
-														viewBox="0 0 24 24"
-														fill="none"
-														stroke="currentColor"
-														strokeWidth="2"
-														strokeLinecap="round"
-														strokeLinejoin="round"
-													>
-														<polyline points="20 6 9 17 4 12" />
-													</svg>
-												) : (
-													<CopySimpleIcon size={12} />
-												)}
+												<CopySimpleIcon size={12} />
 											</button>
 										</div>
 									)}
@@ -415,7 +373,7 @@ function PalettePageContent() {
 							onClick={copyTabContent}
 							aria-label="Copy code"
 						>
-							{tabCopied ? "Copied" : "Copy"}
+							{"Copy"}
 						</Button>
 					</div>
 					<TabsContent value="css">
