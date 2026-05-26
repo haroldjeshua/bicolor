@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { sileo } from "sileo";
 import { DownloadSimpleIcon, ShareNetworkIcon } from "@phosphor-icons/react";
 import { convertAll } from "@/lib/color";
-import { downloadColorCard, shareColorCard, formatColorLines } from "@/lib/export-image";
+import { downloadColorCard, shareColorCard } from "@/lib/export-image";
 import {
 	Dialog,
 	DialogContent,
@@ -22,58 +22,18 @@ export default function ImagePreviewDialog({
 	onOpenChange: (open: boolean) => void;
 	color: string;
 }) {
-	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const [rendered, setRendered] = useState(false);
 	const values = useMemo(() => convertAll(color, "hex"), [color]);
 
-	useEffect(() => {
-		if (!open) {
-			setRendered(false);
-			return;
-		}
-		const canvas = canvasRef.current;
-		if (!canvas) return;
-		const ctx = canvas.getContext("2d");
-		if (!ctx) return;
-
-		const dpr = 2;
-		const swatchSize = 200;
-		const lineHeight = 14;
-		const fontSize = 9;
-		const padding = 16;
-		const lines = formatColorLines(color, values);
-		const textHeight = lines.length * lineHeight + 6;
-		const labelH = 12;
-
-		const w = swatchSize + padding * 2;
-		const h = swatchSize + labelH + textHeight + padding * 2;
-
-		canvas.width = w * dpr;
-		canvas.height = h * dpr;
-		canvas.style.width = `${w}px`;
-		canvas.style.height = `${h}px`;
-		ctx.scale(dpr, dpr);
-
-		ctx.fillStyle = "#18181b";
-		ctx.fillRect(0, 0, w, h);
-
-		ctx.fillStyle = color;
-		ctx.fillRect(padding, padding, swatchSize, swatchSize);
-
-		ctx.fillStyle = "#a1a1aa";
-		ctx.font = `500 ${fontSize}px "Geist Mono", "SF Mono", "Cascadia Code", "Consolas", monospace`;
-		ctx.textBaseline = "top";
-		ctx.fillText(values.hex ?? "", padding, padding + swatchSize + 2);
-
-		ctx.fillStyle = "#ffffff";
-		let textY = padding + swatchSize + labelH + 4;
-		for (const line of lines) {
-			ctx.fillText(line, padding, textY);
-			textY += lineHeight;
-		}
-
-		setRendered(true);
-	}, [open, color, values]);
+	const lines = useMemo(() => {
+		if (!values.hex) return [];
+		return [
+			`rgb: ${values.rgb ?? "\u2014"}`,
+			`hsl: ${values.hsl ?? "\u2014"}`,
+			`oklch: ${values.oklch ?? "\u2014"}`,
+			`oklab: ${values.oklab ?? "\u2014"}`,
+			`lch: ${values.lch ?? "\u2014"}`,
+		];
+	}, [values]);
 
 	const handleDownload = useCallback(async () => {
 		try {
@@ -86,8 +46,8 @@ export default function ImagePreviewDialog({
 
 	const handleShare = useCallback(async () => {
 		try {
-			const shared = await shareColorCard(color, values);
-			if (shared) sileo.success({ title: "Shared" });
+			await shareColorCard(color, values);
+			sileo.success({ title: "Shared" });
 		} catch {}
 	}, [color, values]);
 
@@ -97,30 +57,33 @@ export default function ImagePreviewDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-sm">
 				<DialogHeader>
-					<DialogTitle>Download image</DialogTitle>
+					<DialogTitle>Download as image</DialogTitle>
 				</DialogHeader>
 
-				<div className="flex justify-center bg-zinc-900 rounded-sm p-4">
-					<canvas ref={canvasRef} className="max-w-full h-auto" />
+				<div className="flex justify-center rounded-sm overflow-hidden">
+					<div className="bg-[#18181b] p-4 w-full max-w-[232px]">
+						<div
+							className="w-full aspect-square"
+							style={{ background: color }}
+						/>
+						<p className="mt-1 font-mono text-[9px] text-zinc-400 leading-none">
+							{values.hex}
+						</p>
+						<div className="mt-0.5 font-mono text-[9px] text-white leading-relaxed">
+							{lines.map((line) => (
+								<p key={line}>{line}</p>
+							))}
+						</div>
+					</div>
 				</div>
 
 				<div className="flex items-center gap-2 justify-end">
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={handleDownload}
-						disabled={!rendered}
-					>
+					<Button variant="outline" size="sm" onClick={handleDownload}>
 						<DownloadSimpleIcon />
 						Download
 					</Button>
 					{supportsShare && (
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={handleShare}
-							disabled={!rendered}
-						>
+						<Button variant="outline" size="sm" onClick={handleShare}>
 							<ShareNetworkIcon />
 							Share
 						</Button>

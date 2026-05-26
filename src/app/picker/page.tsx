@@ -13,7 +13,7 @@ import ImagePreviewDialog from "@/components/ImagePreviewDialog";
 import {
 	EyedropperIcon,
 	CopySimpleIcon,
-	ImageSquareIcon,
+	DownloadSimpleIcon,
 	ArrowCounterClockwiseIcon,
 } from "@phosphor-icons/react";
 
@@ -82,8 +82,8 @@ function PickerContent() {
 					className="text-background/60 hover:text-muted"
 					aria-label="Download color image"
 				>
-					<ImageSquareIcon size={14} />
-					<span className="hidden md:inline">Image</span>
+					<DownloadSimpleIcon size={14} />
+					<span className="hidden md:inline">Download</span>
 				</Button>
 				<Button
 					variant="bare"

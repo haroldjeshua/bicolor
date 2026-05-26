@@ -53,7 +53,7 @@ export async function downloadColorCard(
 	const blob = await new Promise<Blob | null>((resolve) =>
 		canvas.toBlob((b) => resolve(b), "image/png"),
 	);
-	if (!blob) return;
+	if (!blob) throw new Error("Could not generate image");
 
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement("a");
@@ -108,7 +108,7 @@ export async function shareColorCard(
 	const blob = await new Promise<Blob | null>((resolve) =>
 		canvas.toBlob((b) => resolve(b), "image/png"),
 	);
-	if (!blob) return false;
+	if (!blob) throw new Error("Could not generate image");
 
 	const file = new File([blob], "bicolor-color-card.png", { type: "image/png" });
 	await navigator.share({
