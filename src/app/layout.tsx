@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ThemeProvider } from "next-themes";
 import { ActionBarProvider, ActionBar } from "@/components/ActionBar";
 import Header from "@/components/Header";
 import { DemoColorSync } from "@/components/DemoColorSync";
@@ -50,18 +51,15 @@ export default function RootLayout({
 			suppressHydrationWarning
 		>
 			<body className="bg-background text-foreground font-sans">
-				<script
-					dangerouslySetInnerHTML={{
-						__html: `document.documentElement.classList.toggle("dark",localStorage.getItem("theme")!=="light")`,
-					}}
-				/>
-				<ActionBarProvider>
-					<Header />
-					<main className="pt-12 pb-10 flex-1">{children}</main>
-					<ActionBar />
-				</ActionBarProvider>
-				<DemoColorSync />
-				<AgentationWrapper />
+				<ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+					<ActionBarProvider>
+						<Header />
+						<main className="pt-12 pb-10 flex-1">{children}</main>
+						<ActionBar />
+					</ActionBarProvider>
+					<DemoColorSync />
+					<AgentationWrapper />
+				</ThemeProvider>
 			</body>
 		</html>
 	);

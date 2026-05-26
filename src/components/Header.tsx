@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 import { Logo } from "./Logo";
 import { EqualsIcon, MoonStarsIcon, SunDimIcon } from "@phosphor-icons/react";
 import {
@@ -28,14 +29,12 @@ const NAV_ITEMS = [
 
 export default function Header() {
 	const pathname = usePathname();
+	const { setTheme, resolvedTheme } = useTheme();
 	const [menuOpen, setMenuOpen] = useState(false);
 	const [aboutOpen, setAboutOpen] = useState(false);
 	const [wipOpen, setWipOpen] = useState(false);
 
-	const toggleDark = () => {
-		const isDark = document.documentElement.classList.toggle("dark");
-		localStorage.setItem("theme", isDark ? "dark" : "light");
-	};
+	const toggleDark = () => setTheme(resolvedTheme === "dark" ? "light" : "dark");
 
 	useEffect(() => {
 		if (!menuOpen) return;

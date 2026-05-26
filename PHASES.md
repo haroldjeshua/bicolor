@@ -194,6 +194,26 @@ Do not add any new features in this phase. If you notice something missing that 
 
 ---
 
+## Status
+
+| Phase | Items | Status |
+|-------|-------|--------|
+| 0 | Foundation | ✅ Complete |
+| 1 | /convert | ✅ Complete |
+| 2 | /picker | ✅ Complete |
+| 3 | /palette | ✅ Complete |
+| 4 | / landing | ✅ Complete |
+| 5 | Responsive audit | ✅ Done |
+| 5 | Keyboard support | ✅ Done |
+| 5 | Accessibility | ✅ Done |
+| 5 | Edge cases (gamut, empty, truncation) | ✅ Done |
+| 5 | OG image (`/api/og`) | ❌ Remains — needs `@vercel/og` + edge route |
+| 5 | Light mode (theme toggle) | ✅ Done via `next-themes` |
+| 5 | README | ✅ Done |
+| Future | /saved (Auth + Database) | ⏳ On hold |
+
+---
+
 ## Future Phase — /saved (Auth + Database)
 
 > Not in scope for v1. Document is here so the architecture decisions are made now, not later.
