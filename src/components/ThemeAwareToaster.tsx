@@ -9,7 +9,7 @@ export default function ThemeAwareToaster() {
 			offset={44}
 			options={{
 				fill: "var(--toast-fill)",
-				roundness: 8,
+				roundness: 6,
 				styles: {
 					title: "text-[var(--toast-title)]! font-mono! text-xs!",
 					badge: "bg-[var(--toast-badge-bg)]!",

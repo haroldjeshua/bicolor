@@ -221,12 +221,25 @@ function PalettePageContent() {
 		} catch {}
 	}, [activeTab, steps, displayModel]);
 
-	const copyStepValue = useCallback(async (_i: number, value: string) => {
+	const copyStepValue = useCallback(async (i: number, value: string) => {
 		try {
 			await navigator.clipboard.writeText(value);
-			sileo.success({ title: "Copied" });
+			const step = steps[i];
+			sileo.success({
+				title: `Copied step ${i}`,
+				icon: <CopySimpleIcon size={16} />,
+				description: step ? (
+					<span className="flex items-center gap-2">
+						<span
+							className="inline-block size-4 shrink-0 rounded-sm border border-border"
+							style={{ background: step.hex }}
+						/>
+						{step.hex}
+					</span>
+				) : undefined,
+			});
 		} catch {}
-	}, []);
+	}, [steps]);
 
 	const displayValue = useMemo(
 		() => convert(seed, "hex", displayModel) ?? seed,

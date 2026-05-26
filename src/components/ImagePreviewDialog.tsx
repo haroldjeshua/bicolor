@@ -16,11 +16,11 @@ import { Button } from "@/components/ui/button";
 
 export default function ImagePreviewDialog({
 	open,
-	onOpenChange,
+	onOpenChangeAction,
 	color,
 }: {
 	open: boolean;
-	onOpenChange: (open: boolean) => void;
+	onOpenChangeAction: (open: boolean) => void;
 	color: string;
 }) {
 	const { resolvedTheme } = useTheme();
@@ -46,7 +46,10 @@ export default function ImagePreviewDialog({
 				icon: <DownloadSimpleIcon size={16} />,
 				description: (
 					<span className="flex items-center gap-2">
-						<span className="inline-block size-4 shrink-0 rounded-sm" style={{ background: color }} />
+						<span
+							className="inline-block size-4 shrink-0 rounded-sm"
+							style={{ background: color }}
+						/>
 						{values.hex}
 					</span>
 				),
@@ -64,7 +67,10 @@ export default function ImagePreviewDialog({
 				icon: <ShareNetworkIcon size={16} />,
 				description: (
 					<span className="flex items-center gap-2">
-						<span className="inline-block size-4 shrink-0 rounded-sm" style={{ background: color }} />
+						<span
+							className="inline-block size-4 shrink-0 rounded-sm"
+							style={{ background: color }}
+						/>
 						{values.hex}
 					</span>
 				),
@@ -76,7 +82,7 @@ export default function ImagePreviewDialog({
 		typeof navigator !== "undefined" && "share" in navigator;
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog open={open} onOpenChange={onOpenChangeAction}>
 			<DialogContent className="sm:max-w-sm">
 				<DialogHeader>
 					<DialogTitle>Download as image</DialogTitle>

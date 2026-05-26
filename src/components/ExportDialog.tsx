@@ -65,11 +65,11 @@ function formatAsTailwind(hex: string, values: Record<string, string | null>): s
 
 export default function ExportDialog({
 	open,
-	onOpenChange,
+	onOpenChangeAction,
 	color,
 }: {
 	open: boolean;
-	onOpenChange: (open: boolean) => void;
+	onOpenChangeAction: (open: boolean) => void;
 	color: string;
 }) {
 	const values = useMemo(() => convertAll(color, "hex"), [color]);
@@ -101,7 +101,7 @@ export default function ExportDialog({
 	);
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog open={open} onOpenChange={onOpenChangeAction}>
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
 					<DialogTitle>Copy color</DialogTitle>

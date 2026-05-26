@@ -18,7 +18,14 @@ import { Button } from "@/components/ui/button";
 import { convert } from "@/lib/color";
 import { HexColorPicker } from "react-colorful";
 import { sileo } from "sileo";
-import { SwapIcon, LinkSimpleIcon, CopySimpleIcon } from "@phosphor-icons/react";
+import {
+	SwapIcon,
+	LinkSimpleIcon,
+	CopySimpleIcon,
+	DownloadSimpleIcon,
+} from "@phosphor-icons/react";
+import ExportDialog from "@/components/ExportDialog";
+import ConvertPreviewDialog from "@/components/ConvertPreviewDialog";
 import { type ColorModel } from "@/lib/constants";
 
 const DEFAULT_A_VALUE = "#1a2b3c";
@@ -76,6 +83,8 @@ function ConvertPageContent() {
 	}, [state, syncUrl]);
 
 	const [showPicker, setShowPicker] = useState(false);
+	const [copyOpen, setCopyOpen] = useState(false);
+	const [previewOpen, setPreviewOpen] = useState(false);
 	const pickerRef = useRef<HTMLDivElement>(null);
 
 	const pickerColor = useMemo(
@@ -118,16 +127,6 @@ function ConvertPageContent() {
 		} catch {}
 	}, []);
 
-	const handleCopyResult = useCallback(async () => {
-		const val = state.bValue;
-		if (val) {
-			try {
-				await navigator.clipboard.writeText(val);
-				sileo.success({ title: "Copied" });
-			} catch {}
-		}
-	}, [state]);
-
 	useEffect(() => {
 		setContent(
 			<>
@@ -144,6 +143,26 @@ function ConvertPageContent() {
 				<Button
 					variant="bare"
 					size="sm"
+					onClick={() => setCopyOpen(true)}
+					className="text-background/60 hover:text-muted"
+					aria-label="Copy color values"
+				>
+					<CopySimpleIcon size={14} />
+					<span className="hidden md:inline">Copy</span>
+				</Button>
+				<Button
+					variant="bare"
+					size="sm"
+					onClick={() => setPreviewOpen(true)}
+					className="text-background/60 hover:text-muted"
+					aria-label="Download conversion image"
+				>
+					<DownloadSimpleIcon size={14} />
+					<span className="hidden md:inline">Download</span>
+				</Button>
+				<Button
+					variant="bare"
+					size="sm"
 					onClick={handleShareUrl}
 					className="text-background/60 hover:text-muted"
 					aria-label="Copy share URL"
@@ -151,20 +170,10 @@ function ConvertPageContent() {
 					<LinkSimpleIcon size={14} />
 					<span className="hidden md:inline">Share</span>
 				</Button>
-				<Button
-					variant="bare"
-					size="sm"
-					onClick={handleCopyResult}
-					className="text-background/60 hover:text-muted"
-					aria-label="Copy result"
-				>
-					<CopySimpleIcon size={14} />
-					<span className="hidden md:inline">Copy</span>
-				</Button>
 			</>,
 		);
 		return () => setContent(null);
-	}, [handleSwap, handleShareUrl, handleCopyResult, setContent]);
+	}, [handleSwap, handleShareUrl, setContent]);
 
 	const onAValueChange = useCallback((value: string) => {
 		setState((prev) => {
@@ -195,10 +204,14 @@ function ConvertPageContent() {
 						<button
 							type="button"
 							onClick={() => setShowPicker((p) => !p)}
-							className="shrink-0 cursor-pointer h-9"
+							className="shrink-0 cursor-pointer"
 							aria-label="Pick a color"
 						>
-							<ColorSwatch color={state.aValue} size="sm" />
+							<ColorSwatch
+								color={state.aValue}
+								size="sm"
+								className="p-1.5 border border-border rounded-lg bg-background"
+							/>
 						</button>
 						{showPicker && (
 							<div
@@ -251,6 +264,17 @@ function ConvertPageContent() {
 				<GamutBadge value={state.aValue} />
 				<ModelGrid value={state.aValue} model={state.aModel} />
 			</div>
+
+			<ExportDialog open={copyOpen} onOpenChangeAction={setCopyOpen} color={state.aValue} />
+			<ConvertPreviewDialog
+				open={previewOpen}
+				onOpenChangeAction={setPreviewOpen}
+				color={pickerColor}
+				aValue={state.aValue}
+				bValue={state.bValue}
+				aModel={state.aModel}
+				bModel={state.bModel}
+			/>
 		</section>
 	);
 }

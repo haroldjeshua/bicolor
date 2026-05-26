@@ -40,7 +40,19 @@ export default function ColorInput({
 		if (!value) return;
 		try {
 			await navigator.clipboard.writeText(value);
-			sileo.success({ title: "Copied", icon: <CopySimpleIcon size={16} /> });
+			sileo.success({
+			title: "Copied",
+			icon: <CopySimpleIcon size={16} />,
+			description: (
+				<span className="flex items-center gap-2">
+					<span
+						className="inline-block size-4 shrink-0 rounded-sm"
+						style={{ background: value }}
+					/>
+					{value}
+				</span>
+			),
+		});
 		} catch {}
 	}, [value]);
 

@@ -52,7 +52,7 @@ function PickerContent() {
 				description: (
 					<span className="flex items-center gap-2">
 						<span
-							className="inline-block size-4 shrink-0 rounded-sm border-border border-px"
+							className="inline-block size-4 shrink-0 rounded-sm border border-border"
 							style={{ background: result.sRGBHex }}
 						/>
 						{result.sRGBHex}
@@ -137,10 +137,10 @@ function PickerContent() {
 
 			<ModelGrid value={color} model="hex" />
 
-			<ExportDialog open={copyOpen} onOpenChange={setCopyOpen} color={color} />
+			<ExportDialog open={copyOpen} onOpenChangeAction={setCopyOpen} color={color} />
 			<ImagePreviewDialog
 				open={previewOpen}
-				onOpenChange={setPreviewOpen}
+				onOpenChangeAction={setPreviewOpen}
 				color={color}
 			/>
 		</section>

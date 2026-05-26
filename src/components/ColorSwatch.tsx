@@ -8,7 +8,7 @@ interface ColorSwatchProps {
 }
 
 const SIZE_MAP = {
-	sm: "h-8 w-8",
+	sm: "h-9 w-9",
 	md: "h-12 w-12",
 	lg: "h-20 w-20",
 };
