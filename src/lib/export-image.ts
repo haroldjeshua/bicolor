@@ -12,7 +12,7 @@ export function formatColorLines(hex: string, values: Record<string, string | nu
 export async function downloadColorCard(
 	hex: string,
 	values: Record<string, string | null>,
-	filename = "bicolor-colors",
+	filename = `bicolor-${hex.replace("#", "")}`,
 ) {
 	const canvas = document.createElement("canvas");
 	const ctx = canvas.getContext("2d");

@@ -42,11 +42,11 @@ function formatAsPlain(hex: string, values: Record<string, string | null>): stri
 function formatAsCSS(hex: string, values: Record<string, string | null>): string {
 	return [
 		`--color: ${values.hex ?? "\u2014"};`,
-		`--color-rgb: ${(values.rgb ?? "\u2014").replace(/^rgb\(|\)$/g, "")};`,
-		`--color-hsl: ${(values.hsl ?? "\u2014").replace(/^hsl\(|\)$/g, "")};`,
-		`--color-oklch: ${(values.oklch ?? "\u2014").replace(/^oklch\(|\)$/g, "")};`,
-		`--color-oklab: ${(values.oklab ?? "\u2014").replace(/^oklab\(|\)$/g, "")};`,
-		`--color-lch: ${(values.lch ?? "\u2014").replace(/^lch\(|\)$/g, "")};`,
+		`--color-rgb: ${values.rgb ?? "\u2014"};`,
+		`--color-hsl: ${values.hsl ?? "\u2014"};`,
+		`--color-oklch: ${values.oklch ?? "\u2014"};`,
+		`--color-oklab: ${values.oklab ?? "\u2014"};`,
+		`--color-lch: ${values.lch ?? "\u2014"};`,
 	].join("\n");
 }
 
@@ -54,6 +54,11 @@ function formatAsTailwind(hex: string, values: Record<string, string | null>): s
 	return [
 		`@theme {`,
 		`  --color-brand: ${values.hex ?? "\u2014"};`,
+		`  --color-brand-rgb: ${values.rgb ?? "\u2014"};`,
+		`  --color-brand-hsl: ${values.hsl ?? "\u2014"};`,
+		`  --color-brand-oklch: ${values.oklch ?? "\u2014"};`,
+		`  --color-brand-oklab: ${values.oklab ?? "\u2014"};`,
+		`  --color-brand-lch: ${values.lch ?? "\u2014"};`,
 		`}`,
 	].join("\n");
 }
@@ -84,11 +89,12 @@ export default function ExportDialog({
 	const handleCopy = useCallback(
 		async (format: FormatId) => {
 			const text = getFormatted(format);
+			const label = FORMATS.find((f) => f.id === format)?.label ?? format;
 			try {
 				await navigator.clipboard.writeText(text);
-				sileo.success({ title: "Copied" });
+				sileo.success({ title: `Copied ${label}`, icon: <CopySimpleIcon size={16} /> });
 			} catch {
-				sileo.error({ title: "Failed to copy" });
+				sileo.error({ title: `Failed to copy ${label}` });
 			}
 		},
 		[getFormatted],

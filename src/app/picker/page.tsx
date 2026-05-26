@@ -46,7 +46,19 @@ function PickerContent() {
 			const dropper = new EyeDropper();
 			const result = await dropper.open();
 			setColor(result.sRGBHex);
-			sileo.success({ title: "Picked", description: result.sRGBHex });
+			sileo.success({
+				title: "Picked",
+				icon: <EyedropperIcon size={16} />,
+				description: (
+					<span className="flex items-center gap-2">
+						<span
+							className="inline-block size-4 shrink-0 rounded-sm border-border border-px"
+							style={{ background: result.sRGBHex }}
+						/>
+						{result.sRGBHex}
+					</span>
+				),
+			});
 		} catch {
 			// user cancelled or browser unsupported
 		}

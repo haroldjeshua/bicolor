@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { sileo } from "sileo";
+import { CopySimpleIcon } from "@phosphor-icons/react";
 
 interface CopyButtonProps {
   value: string;
@@ -12,7 +13,7 @@ export default function CopyButton({ value, label = "Copy" }: CopyButtonProps) {
   const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(value);
-      sileo.success({ title: "Copied" });
+      sileo.success({ title: "Copied", icon: <CopySimpleIcon size={16} /> });
     } catch {}
   }, [value]);
 

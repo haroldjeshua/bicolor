@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { sileo } from "sileo";
+import { CopySimpleIcon } from "@phosphor-icons/react";
 import {
 	MODELS,
 	MODEL_LABELS,
@@ -39,7 +40,7 @@ export default function ColorInput({
 		if (!value) return;
 		try {
 			await navigator.clipboard.writeText(value);
-			sileo.success({ title: "Copied" });
+			sileo.success({ title: "Copied", icon: <CopySimpleIcon size={16} /> });
 		} catch {}
 	}, [value]);
 
