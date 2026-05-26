@@ -8,9 +8,9 @@ import { useActionBar } from "@/components/ActionBar";
 import { Button } from "@/components/ui/button";
 import { GamutBadge } from "@/components/GamutBadge";
 import {
-	Eyedropper,
-	CopySimple,
-	ArrowCounterClockwise,
+	EyedropperIcon,
+	CopySimpleIcon,
+	ArrowCounterClockwiseIcon,
 } from "@phosphor-icons/react";
 import { convertAll } from "@/lib/color";
 
@@ -77,7 +77,7 @@ function PickerContent() {
 					className="text-background/60 hover:text-muted"
 					aria-label="Pick color from screen"
 				>
-					<Eyedropper size={14} />
+					<EyedropperIcon size={14} />
 					<span className="hidden md:inline">Pick</span>
 				</Button>
 				<Button
@@ -87,7 +87,7 @@ function PickerContent() {
 					className="text-background/60 hover:text-muted"
 					aria-label="Copy all color values"
 				>
-					<CopySimple size={14} />
+					<CopySimpleIcon size={14} />
 					<span className="hidden md:inline">Copy all</span>
 				</Button>
 				<Button
@@ -97,7 +97,7 @@ function PickerContent() {
 					className="text-background/60 hover:text-muted"
 					aria-label="Reset to default color"
 				>
-					<ArrowCounterClockwise size={14} />
+					<ArrowCounterClockwiseIcon size={14} />
 					<span className="hidden md:inline">Reset</span>
 				</Button>
 			</>,
@@ -105,17 +105,19 @@ function PickerContent() {
 		return () => setContent(null);
 	}, [setContent, eyedropper, copyAll, clear]);
 
+	useEffect(() => {
+		syncLogoColor(color);
+	}, [color]);
+
 	return (
 		<section className="min-h-[calc(100dvh-88px)] h-full w-full max-w-5xl m-auto flex flex-col p-4 gap-6 overflow-auto justify-center items-center">
-			<div style={{ width: "100%", maxWidth: 512 }}>
-				<HexAlphaColorPicker
-					color={color}
-					onChange={setColor}
-					style={{ width: "100%", height: "min(320px, 50vw)" }}
-				/>
-			</div>
+			<HexAlphaColorPicker
+				color={color}
+				onChange={setColor}
+				style={{ width: "100%", maxWidth: 512, height: "min(320px, 50vw)" }}
+			/>
 
-			<div className="flex items-center gap-2">
+			<div className="flex flex-col items-center gap-1">
 				<HexColorInput
 					color={color}
 					onChange={setColor}
@@ -129,6 +131,26 @@ function PickerContent() {
 			<ModelGrid value={color} model="hex" />
 		</section>
 	);
+}
+
+function blendWithWhite(hex: string, amount: number) {
+	const r = parseInt(hex.slice(1, 3), 16);
+	const g = parseInt(hex.slice(3, 5), 16);
+	const b = parseInt(hex.slice(5, 7), 16);
+	const nr = Math.round(r + (255 - r) * amount);
+	const ng = Math.round(g + (255 - g) * amount);
+	const nb = Math.round(b + (255 - b) * amount);
+	return `#${nr.toString(16).padStart(2, "0")}${ng.toString(16).padStart(2, "0")}${nb.toString(16).padStart(2, "0")}`;
+}
+
+function syncLogoColor(hex: string) {
+	const root = document.documentElement;
+	root.style.setProperty("--logo-fill-1", hex);
+	root.style.setProperty("--logo-fill-2", blendWithWhite(hex, 0.3));
+	root.style.setProperty("--logo-fill-3", blendWithWhite(hex, 0.55));
+	try {
+		sessionStorage.setItem("demoColor", hex);
+	} catch {}
 }
 
 export default function PickerPage() {

@@ -17,7 +17,7 @@ import { useActionBar } from "@/components/ActionBar";
 import { Button } from "@/components/ui/button";
 import { convert } from "@/lib/color";
 import { HexColorPicker } from "react-colorful";
-import { SwapIcon, LinkSimple, CopySimple } from "@phosphor-icons/react";
+import { SwapIcon, LinkSimpleIcon, CopySimpleIcon } from "@phosphor-icons/react";
 import { type ColorModel } from "@/lib/constants";
 
 const DEFAULT_A_VALUE = "#1a2b3c";
@@ -145,7 +145,7 @@ function ConvertPageContent() {
 					className="text-background/60 hover:text-muted"
 					aria-label="Copy share URL"
 				>
-					<LinkSimple size={14} />
+					<LinkSimpleIcon size={14} />
 					<span className="hidden md:inline">Share</span>
 				</Button>
 				<Button
@@ -155,7 +155,7 @@ function ConvertPageContent() {
 					className="text-background/60 hover:text-muted"
 					aria-label="Copy result"
 				>
-					<CopySimple size={14} />
+					<CopySimpleIcon size={14} />
 					<span className="hidden md:inline">Copy</span>
 				</Button>
 			</>,

@@ -19,10 +19,10 @@ import { generatePalette, convert, type PaletteStep } from "@/lib/color";
 import { type ColorModel, MODEL_LABELS } from "@/lib/constants";
 import { HexColorPicker } from "react-colorful";
 import {
-	ArrowCounterClockwise,
-	LinkSimple,
-	DownloadSimple,
-	CopySimple,
+	ArrowCounterClockwiseIcon,
+	LinkSimpleIcon,
+	DownloadSimpleIcon,
+	CopySimpleIcon,
 } from "@phosphor-icons/react";
 
 const DEFAULT_SEED = "#1a2b3c";
@@ -179,7 +179,7 @@ function PalettePageContent() {
 					className="text-background/60 hover:text-muted"
 					aria-label="Reset to default color"
 				>
-					<ArrowCounterClockwise size={14} />
+					<ArrowCounterClockwiseIcon size={14} />
 					<span className="hidden md:inline">Reset</span>
 				</Button>
 				<Button
@@ -189,7 +189,7 @@ function PalettePageContent() {
 					className="text-background/60 hover:text-muted"
 					aria-label="Copy share URL"
 				>
-					<LinkSimple size={14} />
+					<LinkSimpleIcon size={14} />
 					<span className="hidden md:inline">Share</span>
 				</Button>
 				<Button
@@ -199,7 +199,7 @@ function PalettePageContent() {
 					className="text-background/60 hover:text-muted"
 					aria-label="Download palette as SVG"
 				>
-					<DownloadSimple size={14} />
+					<DownloadSimpleIcon size={14} />
 					<span className="hidden md:inline">Download</span>
 				</Button>
 			</div>,
@@ -364,7 +364,7 @@ function PalettePageContent() {
 														<polyline points="20 6 9 17 4 12" />
 													</svg>
 												) : (
-													<CopySimple size={12} />
+													<CopySimpleIcon size={12} />
 												)}
 											</button>
 										</div>
@@ -389,7 +389,7 @@ function PalettePageContent() {
 														<polyline points="20 6 9 17 4 12" />
 													</svg>
 												) : (
-													<CopySimple size={12} />
+													<CopySimpleIcon size={12} />
 												)}
 											</button>
 										</div>

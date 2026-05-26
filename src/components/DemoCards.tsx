@@ -14,7 +14,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { ArrowRight } from "@phosphor-icons/react";
+import { ArrowRightIcon } from "@phosphor-icons/react";
 
 const DEMO_HEX = "#6366f1";
 
@@ -53,7 +53,7 @@ function SectionLink({
 			className="group inline-flex items-center gap-1 font-mono text-xs uppercase tracking-wider text-muted-foreground/60 hover:text-foreground transition-colors"
 		>
 			{label}
-			<ArrowRight
+			<ArrowRightIcon
 				size={10}
 				className="transition-transform group-hover:translate-x-0.5"
 			/>
@@ -71,7 +71,7 @@ function PickerDemo({
 	const oklch = convert(color, "hex", "oklch");
 
 	return (
-		<div className="flex flex-col items-center gap-2 w-full max-w-[200px]">
+		<div className="flex flex-col items-center gap-2 w-full max-w-50">
 			<HexColorPicker
 				color={color}
 				onChange={onChange}
@@ -91,17 +91,16 @@ function PickerDemo({
 function ConvertDemo({ color }: { color: string }) {
 	const [model, setModel] = useState<ColorModel>("hex");
 	const targetModel: ColorModel = model === "hex" ? "oklch" : "hex";
-	const [value, setValue] = useState(DEMO_HEX);
-
-	useEffect(() => {
-		const converted = convert(color, "hex", model) ?? color;
-		setValue(converted);
-	}, [color, model]);
+	const synced = convert(color, "hex", model) ?? color;
+	const [value, setValue] = useState(synced);
 
 	const result = convert(value, model, targetModel);
 
 	return (
-		<div className="flex flex-col items-center gap-2 w-full max-w-56">
+		<div
+			className="flex flex-col items-center gap-2 w-full max-w-56"
+			key={`${color}-${model}`}
+		>
 			<div className="flex items-center gap-1.5 w-full">
 				<input
 					type="text"
@@ -112,12 +111,19 @@ function ConvertDemo({ color }: { color: string }) {
 					aria-label="Color value"
 				/>
 				<Select value={model} onValueChange={(v) => setModel(v as ColorModel)}>
-					<SelectTrigger className="h-7 font-mono text-xs" aria-label="Color model">
+					<SelectTrigger
+						className="h-7 font-mono text-xs"
+						aria-label="Color model"
+					>
 						<SelectValue />
 					</SelectTrigger>
 					<SelectContent>
 						{MODELS.map((m) => (
-							<SelectItem key={m} value={m} className="font-mono text-xs cursor-pointer">
+							<SelectItem
+								key={m}
+								value={m}
+								className="font-mono text-xs cursor-pointer"
+							>
 								{MODEL_LABELS[m]}
 							</SelectItem>
 						))}
@@ -127,7 +133,9 @@ function ConvertDemo({ color }: { color: string }) {
 			<div className="flex items-center gap-1.5 font-mono text-xs">
 				<ColorSwatch color={result ?? ""} size="sm" />
 				<span className="text-foreground">{result || "\u2014"}</span>
-				<span className="text-muted-foreground">({MODEL_LABELS[targetModel]})</span>
+				<span className="text-muted-foreground">
+					({MODEL_LABELS[targetModel]})
+				</span>
 			</div>
 		</div>
 	);

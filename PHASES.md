@@ -167,7 +167,6 @@ Work through these in order:
    - /convert: stack the two ColorInputs vertically on mobile. ActionBar items wrap or abbreviate.
    - /picker: picker canvas scales down to ~240px on mobile.
    - /palette: PaletteStrip scrolls horizontally on mobile rather than wrapping.
-   - Header: nav links remain visible on mobile (no hamburger — they're just three short words).
 
 2. Keyboard support:
    - /convert: press S to trigger Swap.

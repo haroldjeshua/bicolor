@@ -4,12 +4,12 @@ import { isOutOfGamut } from "@/lib/gamut";
 
 export function GamutBadge({ value }: { value: string }) {
   const out = isOutOfGamut(value);
-  if (!out) return null;
 
   return (
     <span
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 font-mono text-[10px] tracking-wide uppercase"
-      title="This color is outside the sRGB gamut and may not display accurately on standard screens"
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 font-mono text-[10px] tracking-wide uppercase leading-none ${out ? "visible" : "invisible"}`}
+      title={out ? "This color is outside the sRGB gamut and may not display accurately on standard screens" : ""}
+      aria-hidden={!out}
     >
       <svg
         width="10"
