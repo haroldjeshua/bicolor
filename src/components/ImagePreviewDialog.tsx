@@ -40,7 +40,7 @@ export default function ImagePreviewDialog({
 
 	const handleDownload = useCallback(async () => {
 		try {
-			await downloadColorCard(color, values);
+			await downloadColorCard(color, values, undefined, "/picker");
 			sileo.success({
 				title: "Image downloaded",
 				icon: <DownloadSimpleIcon size={16} />,
@@ -61,7 +61,7 @@ export default function ImagePreviewDialog({
 
 	const handleShare = useCallback(async () => {
 		try {
-			await shareColorCard(color, values);
+			await shareColorCard(color, values, "/picker");
 			sileo.success({
 				title: "Shared",
 				icon: <ShareNetworkIcon size={16} />,
@@ -108,6 +108,10 @@ export default function ImagePreviewDialog({
 								<p key={line}>{line}</p>
 							))}
 						</div>
+
+						<p className="mt-3 font-mono text-[8px] text-zinc-600 text-left">
+							bicolor.harv.computer/picker
+						</p>
 					</div>
 				</div>
 

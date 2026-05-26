@@ -43,7 +43,7 @@ export default function ConvertPreviewDialog({
 
 	const handleDownload = useCallback(async () => {
 		try {
-			await downloadConvertCard(color, aModel, aValue, bModel, bValue, values);
+			await downloadConvertCard(color, aModel, aValue, bModel, bValue, values, undefined, "/convert");
 			sileo.success({
 				title: "Image downloaded",
 				icon: <DownloadSimpleIcon size={16} />,
@@ -71,13 +71,13 @@ export default function ConvertPreviewDialog({
 
 						<div className="mt-2 font-mono text-[10px] leading-relaxed">
 							<p className="flex gap-2">
-								<span className="text-[#a78bfa] font-bold w-12 shrink-0 uppercase">{aModel}</span>
+								<span className={`font-semibold w-12 shrink-0 uppercase ${isDark ? "text-white" : "text-zinc-900"}`}>{aModel}</span>
 								<span className={`flex-1 truncate font-bold ${isDark ? "text-white" : "text-zinc-900"}`}>
 									{aValue}
 								</span>
 							</p>
 							<p className="flex gap-2">
-								<span className="text-[#a78bfa] font-bold w-12 shrink-0 uppercase">{bModel}</span>
+								<span className={`font-semibold w-12 shrink-0 uppercase ${isDark ? "text-white" : "text-zinc-900"}`}>{bModel}</span>
 								<span className={`flex-1 truncate font-bold ${isDark ? "text-white" : "text-zinc-900"}`}>
 									{bValue}
 								</span>
@@ -96,6 +96,10 @@ export default function ConvertPreviewDialog({
 								</p>
 							))}
 						</div>
+
+						<p className="mt-3 font-mono text-[8px] text-zinc-600 text-left">
+							bicolor.harv.computer/convert
+						</p>
 					</div>
 				</div>
 

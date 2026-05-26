@@ -15,6 +15,7 @@ import { GamutBadge } from "@/components/GamutBadge";
 import { useActionBar } from "@/components/ActionBar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PalettePreviewDialog from "@/components/PalettePreviewDialog";
 import { generatePalette, convert, type PaletteStep } from "@/lib/color";
 import { type ColorModel, MODEL_LABELS } from "@/lib/constants";
 import { HexColorPicker } from "react-colorful";
@@ -65,31 +66,6 @@ function formatJSON(steps: PaletteStep[]): string {
 	);
 }
 
-function downloadSVG(steps: PaletteStep[]): void {
-	const swatchH = 32;
-	const gap = 4;
-	const totalH = steps.length * (swatchH + gap) - gap;
-	const swatchW = 200;
-	const fontSize = 11;
-
-	const rects = steps
-		.map(
-			(s, i) =>
-				`<rect x="0" y="${i * (swatchH + gap)}" width="${swatchW}" height="${swatchH}" fill="${s.hex}" rx="3" />` +
-				`<text x="${swatchW - 8}" y="${i * (swatchH + gap) + swatchH / 2 + 1}" text-anchor="end" font-family="monospace" font-size="${fontSize}" fill="${i < 5 ? "#000" : "#fff"}">${s.hex}</text>`,
-		)
-		.join("");
-
-	const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${swatchW}" height="${totalH}">${rects}</svg>`;
-	const blob = new Blob([svg], { type: "image/svg+xml" });
-	const url = URL.createObjectURL(blob);
-	const a = document.createElement("a");
-	a.href = url;
-	a.download = "palette.svg";
-	a.click();
-	URL.revokeObjectURL(url);
-}
-
 function PalettePageContent() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
@@ -109,6 +85,7 @@ function PalettePageContent() {
 	});
 
 	const [showPicker, setShowPicker] = useState(false);
+const [previewOpen, setPreviewOpen] = useState(false);
 	const pickerRef = useRef<HTMLDivElement>(null);
 
 	const pickerColor = useMemo(
@@ -160,9 +137,8 @@ function PalettePageContent() {
 	}, []);
 
 	const handleDownloadImage = useCallback(() => {
-		downloadSVG(steps);
-		sileo.success({ title: "Image downloaded" });
-	}, [steps]);
+		setPreviewOpen(true);
+	}, []);
 
 	useEffect(() => {
 		setContent(
@@ -180,22 +156,22 @@ function PalettePageContent() {
 				<Button
 					variant="bare"
 					size="sm"
+					onClick={handleDownloadImage}
+					className="text-background/60 hover:text-muted"
+					aria-label="Download palette image"
+				>
+					<DownloadSimpleIcon size={14} />
+					<span className="hidden md:inline">Download</span>
+				</Button>
+				<Button
+					variant="bare"
+					size="sm"
 					onClick={handleShare}
 					className="text-background/60 hover:text-muted"
 					aria-label="Copy share URL"
 				>
 					<LinkSimpleIcon size={14} />
 					<span className="hidden md:inline">Share</span>
-				</Button>
-				<Button
-					variant="bare"
-					size="sm"
-					onClick={handleDownloadImage}
-					className="text-background/60 hover:text-muted"
-					aria-label="Download palette as SVG"
-				>
-					<DownloadSimpleIcon size={14} />
-					<span className="hidden md:inline">Download</span>
 				</Button>
 			</div>,
 		);
@@ -406,6 +382,13 @@ function PalettePageContent() {
 					</TabsContent>
 				</Tabs>
 			</div>
+			<PalettePreviewDialog
+				open={previewOpen}
+				onOpenChangeAction={setPreviewOpen}
+				steps={steps}
+				seedStep={seedStep}
+				displayModel={displayModel}
+			/>
 		</section>
 	);
 }

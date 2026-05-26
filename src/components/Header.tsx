@@ -5,7 +5,12 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { Logo } from "./Logo";
-import { EqualsIcon, MoonStarsIcon, SunDimIcon } from "@phosphor-icons/react";
+import {
+	DotsThreeVerticalIcon,
+	EqualsIcon,
+	MoonStarsIcon,
+	SunDimIcon,
+} from "@phosphor-icons/react";
 import {
 	Dialog,
 	DialogContent,
@@ -34,7 +39,8 @@ export default function Header() {
 	const [aboutOpen, setAboutOpen] = useState(false);
 	const [wipOpen, setWipOpen] = useState(false);
 
-	const toggleDark = () => setTheme(resolvedTheme === "dark" ? "light" : "dark");
+	const toggleDark = () =>
+		setTheme(resolvedTheme === "dark" ? "light" : "dark");
 
 	useEffect(() => {
 		if (!menuOpen) return;
@@ -73,7 +79,7 @@ export default function Header() {
 					))}
 				</nav>
 
-				<div className="flex items-center justify-self-end gap-3">
+				<div className="flex items-center justify-self-end gap-6">
 					<button
 						onClick={toggleDark}
 						className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
@@ -89,11 +95,15 @@ export default function Header() {
 
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<button className="cursor-pointer font-mono text-xs tracking-wide uppercase text-muted-foreground hover:text-foreground transition-colors">
-								More
+							<button className="cursor-pointer font-mono text-xs tracking-wide uppercase text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center">
+								<span>More</span>
+								<DotsThreeVerticalIcon className="ml-0.5" size={16} />
 							</button>
 						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end" className="min-w-40 font-mono text-xs">
+						<DropdownMenuContent
+							align="end"
+							className="min-w-40 font-mono text-xs"
+						>
 							<DropdownMenuItem onSelect={() => setAboutOpen(true)}>
 								About
 							</DropdownMenuItem>
@@ -102,29 +112,49 @@ export default function Header() {
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem asChild>
-								<a href="https://github.com/haroldjeshua/bicolor" target="_blank" rel="noopener noreferrer">
+								<a
+									href="https://github.com/haroldjeshua/bicolor"
+									target="_blank"
+									rel="noopener noreferrer"
+								>
 									GitHub
 								</a>
 							</DropdownMenuItem>
 							<DropdownMenuItem asChild>
-								<a href="https://x.com/haroldjeshua" target="_blank" rel="noopener noreferrer">
+								<a
+									href="https://x.com/haroldjeshua"
+									target="_blank"
+									rel="noopener noreferrer"
+								>
 									X / Twitter
 								</a>
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem asChild>
-								<a href="mailto:hello@harv.computer" target="_blank" rel="noopener noreferrer">
+								<a
+									href="mailto:hello@harv.computer"
+									target="_blank"
+									rel="noopener noreferrer"
+								>
 									Contact
 								</a>
 							</DropdownMenuItem>
 							<DropdownMenuItem asChild>
-								<a href="mailto:hello@harv.computer?subject=Bicolor%20Feedback" target="_blank" rel="noopener noreferrer">
+								<a
+									href="mailto:hello@harv.computer?subject=Bicolor%20Feedback"
+									target="_blank"
+									rel="noopener noreferrer"
+								>
 									Feedback
 								</a>
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem asChild>
-								<a href="https://buymeacoffee.com/haroldjeshua" target="_blank" rel="noopener noreferrer">
+								<a
+									href="https://buymeacoffee.com/haroldjeshua"
+									target="_blank"
+									rel="noopener noreferrer"
+								>
 									Buy me a coffee
 								</a>
 							</DropdownMenuItem>
@@ -171,10 +201,9 @@ export default function Header() {
 					<DialogHeader>
 						<DialogTitle>bicolor</DialogTitle>
 						<DialogDescription>
-							A direct, zero-overhead color tool for design engineers.
-							Pick colors, convert between oklch/rgb/hsl/hex, and
-							generate harmonious palettes &mdash; all with
-							URL-shareable state.
+							A direct, zero-overhead color tool for design engineers. Pick
+							colors, convert between oklch/rgb/hsl/hex, and generate harmonious
+							palettes &mdash; all with URL-shareable state.
 						</DialogDescription>
 					</DialogHeader>
 					<div className="font-mono text-[10px] text-muted-foreground space-y-1">
@@ -186,7 +215,7 @@ export default function Header() {
 								rel="noopener noreferrer"
 								className="text-foreground hover:underline"
 							>
-								Harv
+								harv
 							</a>{" "}
 							in Bicol, Philippines
 						</p>
@@ -212,22 +241,38 @@ export default function Header() {
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Coming soon</DialogTitle>
-						<DialogDescription>
-							Features in the pipeline.
-						</DialogDescription>
+						<DialogDescription>Features in the pipeline.</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-3">
-						{([
-							["/gradient", "Gradient generator — blend between colors with full control"],
-							["\u2B50 Saved", "Save and organize your color palette library"],
-							["\uD83D\uDD11 Login", "Sync palettes across devices with your account"],
-							["\uD83C\uDFA8 Harmony", "Complementary, analogous, triadic color schemes"],
-							["\uD83D\uDCA1 Contrast", "WCAG accessibility checker for your color combos"],
-							["\uD83D\uDCCB Tokens", "Export design tokens for Tailwind, CSS, Figma"],
-						] as const).map(([label, desc]) => (
-							<div key={label} className="font-mono text-[10px]">
-								<p className="text-foreground">{label}</p>
-								<p className="text-muted-foreground">{desc}</p>
+						{(
+							[
+								[
+									"Palette presets",
+									"Radix, Tailwind, and other curated palette libraries",
+								],
+								[
+									"/gradient",
+									"Gradient generator — blend between colors with full control",
+								],
+								["Saved", "Save and organize your color palette library"],
+								["Login", "Sync palettes across devices with your account"],
+								["Harmony", "Complementary, analogous, triadic color schemes"],
+								[
+									"Contrast",
+									"WCAG accessibility checker for your color combos",
+								],
+								["Tokens", "Export design tokens for Tailwind, CSS, Figma"],
+							] as const
+						).map(([label, desc]) => (
+							<div
+								key={label}
+								className="flex items-start gap-2 font-mono text-[10px]"
+							>
+								<span className="mt-1.25 size-1 shrink-0 rounded-full bg-muted-foreground/50" />
+								<div className="flex-1">
+									<p className="text-foreground">{label}</p>
+									<p className="text-muted-foreground">{desc}</p>
+								</div>
 							</div>
 						))}
 					</div>
