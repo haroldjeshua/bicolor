@@ -207,7 +207,7 @@ Do not add any new features in this phase. If you notice something missing that 
 | 5 | Keyboard support | ✅ Done |
 | 5 | Accessibility | ✅ Done |
 | 5 | Edge cases (gamut, empty, truncation) | ✅ Done |
-| 5 | OG image (`/api/og`) | ❌ Remains — needs `@vercel/og` + edge route |
+| 5 | OG image (`/api/og`) | ✅ Done — `next/og` ImageResponse with culori |
 | 5 | Light mode (theme toggle) | ✅ Done via `next-themes` |
 | 5 | README | ✅ Done |
 | Future | /saved (Auth + Database) | ⏳ On hold |

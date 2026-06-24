@@ -85,7 +85,7 @@ function PalettePageContent() {
 	});
 
 	const [showPicker, setShowPicker] = useState(false);
-const [previewOpen, setPreviewOpen] = useState(false);
+	const [previewOpen, setPreviewOpen] = useState(false);
 	const pickerRef = useRef<HTMLDivElement>(null);
 
 	const pickerColor = useMemo(
@@ -176,12 +176,7 @@ const [previewOpen, setPreviewOpen] = useState(false);
 			</div>,
 		);
 		return () => setContent(null);
-	}, [
-		handleReset,
-		handleShare,
-		handleDownloadImage,
-		setContent,
-	]);
+	}, [handleReset, handleShare, handleDownloadImage, setContent]);
 
 	const [activeTab, setActiveTab] = useState("css");
 
@@ -197,25 +192,28 @@ const [previewOpen, setPreviewOpen] = useState(false);
 		} catch {}
 	}, [activeTab, steps, displayModel]);
 
-	const copyStepValue = useCallback(async (i: number, value: string) => {
-		try {
-			await navigator.clipboard.writeText(value);
-			const step = steps[i];
-			sileo.success({
-				title: `Copied step ${i}`,
-				icon: <CopySimpleIcon size={16} />,
-				description: step ? (
-					<span className="flex items-center gap-2">
-						<span
-							className="inline-block size-4 shrink-0 rounded-sm border border-border"
-							style={{ background: step.hex }}
-						/>
-						{step.hex}
-					</span>
-				) : undefined,
-			});
-		} catch {}
-	}, [steps]);
+	const copyStepValue = useCallback(
+		async (i: number, value: string) => {
+			try {
+				await navigator.clipboard.writeText(value);
+				const step = steps[i];
+				sileo.success({
+					title: `Copied step ${i}`,
+					icon: <CopySimpleIcon size={16} />,
+					description: step ? (
+						<span className="flex items-center gap-2">
+							<span
+								className="inline-block size-4 shrink-0 rounded-sm border border-border"
+								style={{ background: step.hex }}
+							/>
+							{value}
+						</span>
+					) : undefined,
+				});
+			} catch {}
+		},
+		[steps],
+	);
 
 	const displayValue = useMemo(
 		() => convert(seed, "hex", displayModel) ?? seed,
@@ -237,7 +235,7 @@ const [previewOpen, setPreviewOpen] = useState(false);
 					<button
 						type="button"
 						onClick={() => setShowPicker((p) => !p)}
-						className="shrink-0 cursor-pointer h-9"
+						className="shrink-0 cursor-pointer h-9 border border-border"
 						aria-label="Pick a seed color"
 					>
 						<ColorSwatch color={seed} size="sm" />
@@ -272,36 +270,49 @@ const [previewOpen, setPreviewOpen] = useState(false);
 			) : (
 				<>
 					<div className="w-full max-w-2xl flex rounded-sm overflow-hidden border border-border/50">
-						{steps.map((s) => (
-							<div
-								key={s.index}
-								className={`flex-1 h-10 md:h-14 relative ${s.index === seedStep ? "ring-1 ring-inset ring-foreground/40" : ""}`}
-								style={{ background: s.hex }}
-								title={`${s.index}: ${s[displayModel as keyof PaletteStep] as string}`}
-							>
-								{s.index === seedStep && (
-									<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-										<div className="w-2 h-2 rounded-full bg-foreground ring-[1.5px] ring-background" />
-									</div>
-								)}
-							</div>
-						))}
+						{steps.map((s) => {
+							const displayVal = s[displayModel as keyof PaletteStep] as string;
+							return (
+								<button
+									type="button"
+									key={s.index}
+									onClick={() => copyStepValue(s.index, displayVal)}
+									className={`flex-1 h-10 md:h-14 relative cursor-pointer ${s.index === seedStep ? "ring-1 ring-inset ring-foreground/40" : ""}`}
+									style={{ background: s.hex }}
+									title={`${s.index}: ${displayVal}`}
+									aria-label={`Copy step ${s.index}`}
+								>
+									{s.index === seedStep && (
+										<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+											<div className="w-2 h-2 rounded-full bg-foreground ring-[1.5px] ring-background" />
+										</div>
+									)}
+								</button>
+							);
+						})}
 					</div>
 
 					<div className="w-full max-w-2xl flex flex-col gap-px font-mono text-xs">
-						<div className="grid grid-cols-[3rem_1fr_5rem] gap-2 px-3 py-1.5 text-muted-foreground/50 uppercase tracking-wider">
-							<span>Step</span>
-							<span>{MODEL_LABELS[displayModel]}</span>
-							{displayModel !== "hex" && (
+						{displayModel !== "hex" ? (
+							<div className="grid grid-cols-[3rem_1fr_5rem_2rem] gap-2 px-3 py-1.5 text-muted-foreground/50 uppercase tracking-wider">
+								<span>Step</span>
+								<span>{MODEL_LABELS[displayModel]}</span>
 								<span className="text-right">Hex</span>
-							)}
-						</div>
+								<span />
+							</div>
+						) : (
+							<div className="grid grid-cols-[3rem_1fr_2rem] gap-2 px-3 py-1.5 text-muted-foreground/50 uppercase tracking-wider">
+								<span>Step</span>
+								<span>Hex</span>
+								<span />
+							</div>
+						)}
 						{steps.map((s) => {
 							const displayVal = s[displayModel as keyof PaletteStep] as string;
 							return (
 								<div
 									key={s.index}
-									className="grid grid-cols-[3rem_1fr_5rem] gap-2 items-center px-3 py-2 rounded-sm hover:bg-muted/30 transition-colors"
+									className={`grid gap-2 items-center px-3 py-2 rounded-sm hover:bg-muted/30 transition-colors ${displayModel !== "hex" ? "grid-cols-[3rem_1fr_5rem_2rem]" : "grid-cols-[3rem_1fr_2rem]"}`}
 								>
 									<div className="flex items-center gap-2">
 										<div
@@ -317,30 +328,18 @@ const [previewOpen, setPreviewOpen] = useState(false);
 									<span className="truncate text-foreground tracking-tight">
 										{displayVal}
 									</span>
-									{displayModel !== "hex" ? (
-										<div className="flex items-center gap-1 justify-end">
-											<span className="truncate text-muted-foreground">
-												{s.hex}
-											</span>
-											<button
-												onClick={() => copyStepValue(s.index, displayVal)}
-												className="shrink-0 text-muted-foreground hover:text-foreground transition-colors cursor-pointer p-0.5"
-												aria-label={`Copy step ${s.index}`}
-											>
-												<CopySimpleIcon size={12} />
-											</button>
-										</div>
-									) : (
-										<div className="flex items-center gap-1 justify-end">
-											<button
-												onClick={() => copyStepValue(s.index, displayVal)}
-												className="shrink-0 text-muted-foreground hover:text-foreground transition-colors cursor-pointer p-0.5"
-												aria-label={`Copy step ${s.index}`}
-											>
-												<CopySimpleIcon size={12} />
-											</button>
-										</div>
+									{displayModel !== "hex" && (
+										<span className="truncate text-right text-muted-foreground">
+											{s.hex}
+										</span>
 									)}
+									<button
+										onClick={() => copyStepValue(s.index, displayVal)}
+										className="justify-self-end shrink-0 text-muted-foreground hover:text-foreground transition-colors cursor-pointer p-0.5"
+										aria-label={`Copy step ${s.index}`}
+									>
+										<CopySimpleIcon size={12} />
+									</button>
 								</div>
 							);
 						})}

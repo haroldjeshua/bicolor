@@ -2,8 +2,8 @@
 
 import { Suspense, useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { sileo } from "sileo";
 import { HexAlphaColorPicker, HexColorInput } from "react-colorful";
+import { sileo } from "sileo";
 import ModelGrid from "@/components/ModelGrid";
 import { useActionBar } from "@/components/ActionBar";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,25 @@ function PickerContent() {
 	const [copyOpen, setCopyOpen] = useState(false);
 	const [previewOpen, setPreviewOpen] = useState(false);
 	const { setContent } = useActionBar();
+
+	const handleCopyHex = useCallback(async () => {
+		try {
+			await navigator.clipboard.writeText(color);
+			sileo.success({
+				title: "Copied",
+				icon: <CopySimpleIcon size={16} />,
+				description: (
+					<span className="flex items-center gap-2">
+						<span
+							className="inline-block size-4 shrink-0 rounded-sm border border-border"
+							style={{ background: color }}
+						/>
+						{color}
+					</span>
+				),
+			});
+		} catch {}
+	}, [color]);
 
 	const clear = useCallback(() => {
 		setColor(DEFAULT_COLOR);
@@ -125,13 +144,22 @@ function PickerContent() {
 			/>
 
 			<div className="flex flex-col items-center gap-1">
-				<HexColorInput
-					color={color}
-					onChange={setColor}
-					prefixed
-					alpha
-					className="w-full max-w-48 bg-transparent border border-border rounded-sm px-3 py-1.5 font-mono text-sm text-foreground text-center outline-none focus:border-ring transition-colors"
-				/>
+				<div className="relative w-full max-w-48">
+					<HexColorInput
+						color={color}
+						onChange={setColor}
+						prefixed
+						alpha
+						className="w-full bg-transparent border border-border rounded-sm px-3 py-1.5 pr-8 font-mono text-sm text-foreground text-center outline-none focus:border-ring transition-colors"
+					/>
+					<button
+						onClick={handleCopyHex}
+						className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer p-1"
+						aria-label="Copy color value"
+					>
+						<CopySimpleIcon size={14} />
+					</button>
+				</div>
 				<GamutBadge value={color} />
 			</div>
 

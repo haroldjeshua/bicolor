@@ -26,9 +26,31 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+	metadataBase: new URL("https://bicolor.app"),
 	title: "bicolor — Pick. Convert. Palette.",
 	description:
 		"A deadsimple, zero-overhead color tool for designers and developers. Pick colors, convert between models, generate palettes.",
+	openGraph: {
+		title: "bicolor — Pick. Convert. Palette.",
+		description:
+			"A deadsimple, zero-overhead color tool for designers and developers.",
+		siteName: "bicolor",
+		images: [
+			{
+				url: "/api/og",
+				width: 1200,
+				height: 630,
+				alt: "bicolor — Pick. Convert. Palette.",
+			},
+		],
+	},
+	twitter: {
+		card: "summary_large_image",
+		title: "bicolor — Pick. Convert. Palette.",
+		description:
+			"A deadsimple, zero-overhead color tool for designers and developers.",
+		images: ["/api/og"],
+	},
 };
 
 export const viewport: Viewport = {

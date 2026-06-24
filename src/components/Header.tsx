@@ -122,7 +122,7 @@ export default function Header() {
 							</DropdownMenuItem>
 							<DropdownMenuItem asChild>
 								<a
-									href="https://x.com/haroldjeshua"
+									href="https://x.com/haroldvarde"
 									target="_blank"
 									rel="noopener noreferrer"
 								>
