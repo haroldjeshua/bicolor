@@ -30,6 +30,7 @@ const NAV_ITEMS = [
 	{ href: "/picker", label: "picker" },
 	{ href: "/convert", label: "convert" },
 	{ href: "/palette", label: "palette" },
+	{ href: "/gradient", label: "gradient" },
 ] as const;
 
 export default function Header() {
@@ -246,16 +247,7 @@ export default function Header() {
 					<div className="space-y-3">
 						{(
 							[
-								[
-									"Palette presets",
-									"Radix, Tailwind, and other curated palette libraries",
-								],
-								[
-									"/gradient",
-									"Gradient generator — blend between colors with full control",
-								],
-								["Saved", "Save and organize your color palette library"],
-								["Login", "Sync palettes across devices with your account"],
+								["Login & Saved", "Auth, saved palettes, organize your library"],
 								["Harmony", "Complementary, analogous, triadic color schemes"],
 								[
 									"Contrast",
