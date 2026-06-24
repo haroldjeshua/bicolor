@@ -21,6 +21,7 @@ import {
 	MinusCircleIcon,
 	ArrowsLeftRightIcon,
 	ArrowCounterClockwiseIcon,
+	ShuffleIcon,
 	SlidersHorizontalIcon,
 } from "@phosphor-icons/react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -182,9 +183,42 @@ function GradientPageContent() {
 		]);
 	}, []);
 
+	const shuffle = useCallback(() => {
+		const types: GradientType[] = ["linear", "radial", "angular", "diamond"];
+		const newType = types[Math.floor(Math.random() * types.length)];
+		const newAngle = Math.round(Math.random() * 360 / 5) * 5;
+		const stopCount = 2 + Math.floor(Math.random() * 4);
+		const positions = Array.from({ length: stopCount }, () =>
+			Math.round(Math.random() * 100),
+		).sort((a, b) => a - b);
+		positions[0] = 0;
+		positions[stopCount - 1] = 100;
+		const newStops: GradientStop[] = positions.map((p, i) => {
+			const hex =
+				"#" +
+				Math.floor(Math.random() * 0xffffff)
+					.toString(16)
+					.padStart(6, "0");
+			return { id: nextStopId(), color: hex, position: p };
+		});
+		setType(newType);
+		setAngle(newAngle);
+		setStops(newStops);
+	}, []);
+
 	useEffect(() => {
 		setContent(
 			<div className="flex items-center gap-3">
+				<Button
+					variant="bare"
+					size="sm"
+					onClick={shuffle}
+					className="text-background/60 hover:text-muted"
+					aria-label="Shuffle gradient"
+				>
+					<ShuffleIcon size={14} />
+					<span className="hidden md:inline">Shuffle</span>
+				</Button>
 				<Button
 					variant="bare"
 					size="sm"
@@ -218,7 +252,7 @@ function GradientPageContent() {
 			</div>,
 		);
 		return () => setContent(null);
-	}, [handleCopyCSS, handleCopyTW, reset, setContent]);
+	}, [handleCopyCSS, handleCopyTW, reset, shuffle, setContent]);
 
 	return (
 		<section className="min-h-[calc(100dvh-88px)] h-full w-full max-w-3xl m-auto flex flex-col p-4 gap-5 overflow-auto items-center justify-center">
