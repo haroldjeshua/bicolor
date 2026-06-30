@@ -1,20 +1,26 @@
 "use client";
 
-import { Suspense, useState, useCallback, useEffect } from "react";
+import { Suspense, useState, useCallback, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { HexAlphaColorPicker, HexColorInput } from "react-colorful";
+import { HexAlphaColorPicker } from "react-colorful";
 import { sileo } from "sileo";
+import ColorInput from "@/components/ColorInput";
+import ColorSwatch from "@/components/ColorSwatch";
 import ModelGrid from "@/components/ModelGrid";
+import SaveDialog from "@/components/SaveDialog";
 import { useActionBar } from "@/components/ActionBar";
 import { Button } from "@/components/ui/button";
 import { GamutBadge } from "@/components/GamutBadge";
 import ExportDialog from "@/components/ExportDialog";
 import ImagePreviewDialog from "@/components/ImagePreviewDialog";
+import { convert } from "@/lib/color";
+import { type ColorModel } from "@/lib/constants";
 import {
 	EyedropperIcon,
 	CopySimpleIcon,
 	DownloadSimpleIcon,
 	ArrowCounterClockwiseIcon,
+	BookmarkSimpleIcon,
 } from "@phosphor-icons/react";
 
 const DEFAULT_COLOR = "#1a2b3c";
@@ -28,26 +34,26 @@ function PickerContent() {
 	});
 	const [copyOpen, setCopyOpen] = useState(false);
 	const [previewOpen, setPreviewOpen] = useState(false);
+	const [saveOpen, setSaveOpen] = useState(false);
+	const [inputModel, setInputModel] = useState<ColorModel>("hex");
 	const { setContent } = useActionBar();
 
-	const handleCopyHex = useCallback(async () => {
-		try {
-			await navigator.clipboard.writeText(color);
-			sileo.success({
-				title: "Copied",
-				icon: <CopySimpleIcon size={16} />,
-				description: (
-					<span className="flex items-center gap-2">
-						<span
-							className="inline-block size-4 shrink-0 rounded-sm border border-border"
-							style={{ background: color }}
-						/>
-						{color}
-					</span>
-				),
-			});
-		} catch {}
-	}, [color]);
+	const displayValue = useMemo(
+		() => convert(color, "hex", inputModel) ?? color,
+		[color, inputModel],
+	);
+
+	const handleValueChange = useCallback(
+		(v: string) => {
+			const hex = convert(v, inputModel, "hex");
+			if (hex) {
+				setColor(hex);
+			} else if (/^#[0-9a-f]{3,8}$/i.test(v)) {
+				setColor(v);
+			}
+		},
+		[inputModel],
+	);
 
 	const clear = useCallback(() => {
 		setColor(DEFAULT_COLOR);
@@ -126,10 +132,20 @@ function PickerContent() {
 					<ArrowCounterClockwiseIcon size={14} />
 					<span className="hidden md:inline">Reset</span>
 				</Button>
+				<Button
+					variant="bare"
+					size="sm"
+					onClick={() => setSaveOpen(true)}
+					className="text-background/60 hover:text-muted"
+					aria-label="Save color"
+				>
+					<BookmarkSimpleIcon size={14} />
+					<span className="hidden md:inline">Save</span>
+				</Button>
 			</>,
 		);
 		return () => setContent(null);
-	}, [setContent, eyedropper, clear]);
+	}, [setContent, eyedropper, clear, color]);
 
 	useEffect(() => {
 		syncLogoColor(color);
@@ -143,33 +159,38 @@ function PickerContent() {
 				style={{ width: "100%", maxWidth: 512, height: "min(320px, 50vw)" }}
 			/>
 
-			<div className="flex flex-col items-center gap-1">
-				<div className="relative w-full max-w-48">
-					<HexColorInput
-						color={color}
-						onChange={setColor}
-						prefixed
-						alpha
-						className="w-full bg-transparent border border-border rounded-sm px-3 py-1.5 pr-8 font-mono text-sm text-foreground text-center outline-none focus:border-ring transition-colors"
+			<div className="flex items-center gap-3 w-full flex-col max-w-lg">
+				<div className="flex items-center gap-3 w-full flex-row">
+					<ColorSwatch color={color} size="sm" />
+					<ColorInput
+						value={displayValue}
+						model={inputModel}
+						onValueChange={handleValueChange}
+						onModelChange={setInputModel}
 					/>
-					<button
-						onClick={handleCopyHex}
-						className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer p-1"
-						aria-label="Copy color value"
-					>
-						<CopySimpleIcon size={14} />
-					</button>
 				</div>
+
 				<GamutBadge value={color} />
 			</div>
 
 			<ModelGrid value={color} model="hex" />
 
-			<ExportDialog open={copyOpen} onOpenChangeAction={setCopyOpen} color={color} />
+			<ExportDialog
+				open={copyOpen}
+				onOpenChangeAction={setCopyOpen}
+				color={color}
+			/>
 			<ImagePreviewDialog
 				open={previewOpen}
 				onOpenChangeAction={setPreviewOpen}
 				color={color}
+			/>
+			<SaveDialog
+				open={saveOpen}
+				onOpenChange={setSaveOpen}
+				type="color"
+				hex={color}
+				url={`/picker?color=${encodeURIComponent(color)}`}
 			/>
 		</section>
 	);
