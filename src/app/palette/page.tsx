@@ -20,6 +20,7 @@ import { generatePalette, convert, type PaletteStep } from "@/lib/color";
 import { type ColorModel, MODEL_LABELS } from "@/lib/constants";
 import { type PresetPalette } from "@/lib/presets";
 import PresetDrawer from "@/components/PresetDrawer";
+import PaletteSaveDialog from "@/components/PaletteSaveDialog";
 import { HexColorPicker } from "react-colorful";
 import { sileo } from "sileo";
 import {
@@ -28,6 +29,7 @@ import {
 	DownloadSimpleIcon,
 	CopySimpleIcon,
 	PaletteIcon,
+	BookmarkSimpleIcon,
 } from "@phosphor-icons/react";
 
 const DEFAULT_SEED = "#1a2b3c";
@@ -91,6 +93,7 @@ function PalettePageContent() {
 	const [showPicker, setShowPicker] = useState(false);
 	const [presetDrawerOpen, setPresetDrawerOpen] = useState(false);
 	const [previewOpen, setPreviewOpen] = useState(false);
+	const [saveOpen, setSaveOpen] = useState(false);
 	const pickerRef = useRef<HTMLDivElement>(null);
 
 	const pickerColor = useMemo(
@@ -186,6 +189,16 @@ function PalettePageContent() {
 				>
 					<LinkSimpleIcon size={14} />
 					<span className="hidden md:inline">Share</span>
+				</Button>
+				<Button
+					variant="bare"
+					size="sm"
+					onClick={() => setSaveOpen(true)}
+					className="text-background/60 hover:text-muted"
+					aria-label="Save palette"
+				>
+					<BookmarkSimpleIcon size={14} />
+					<span className="hidden md:inline">Save</span>
 				</Button>
 			</div>,
 		);
@@ -517,6 +530,11 @@ function PalettePageContent() {
 				steps={steps}
 				seedStep={seedStep}
 				displayModel={displayModel}
+			/>
+			<PaletteSaveDialog
+				open={saveOpen}
+				onOpenChange={setSaveOpen}
+				seed={seed}
 			/>
 		</section>
 	);
