@@ -8,7 +8,9 @@ import {
 	useRef,
 	useMemo,
 } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import ColorSwatch from "@/components/ColorSwatch";
+import GradientSaveDialog from "@/components/GradientSaveDialog";
 import { useActionBar } from "@/components/ActionBar";
 import { Button } from "@/components/ui/button";
 import { convert } from "@/lib/color";
@@ -22,6 +24,7 @@ import {
 	ArrowsLeftRightIcon,
 	ArrowCounterClockwiseIcon,
 	ShuffleIcon,
+	BookmarkSimpleIcon,
 	SlidersHorizontalIcon,
 } from "@phosphor-icons/react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,19 +36,18 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 
-type GradientType = "linear" | "radial" | "angular" | "diamond";
+type GradientType = "linear" | "radial" | "angular";
 
 const GRADIENT_TYPES: { value: GradientType; label: string }[] = [
 	{ value: "linear", label: "Linear" },
 	{ value: "radial", label: "Radial" },
 	{ value: "angular", label: "Angular" },
-	{ value: "diamond", label: "Diamond" },
 ];
 
-let stopIdCounter = 2;
-function nextStopId() {
-	return String(++stopIdCounter);
-}
+const DEFAULT_STOPS = [
+	{ id: "1", color: "#6366f1", position: 0 },
+	{ id: "2", color: "#f97316", position: 100 },
+] satisfies GradientStop[];
 
 interface GradientStop {
 	id: string;
@@ -53,19 +55,65 @@ interface GradientStop {
 	position: number;
 }
 
+function parseStopsFromParams(params: URLSearchParams): GradientStop[] | null {
+	const raw = params.get("stops");
+	if (!raw) return null;
+	try {
+		const parsed = JSON.parse(raw);
+		if (!Array.isArray(parsed) || parsed.length < 2) return null;
+		return parsed.map((s: Record<string, unknown>, i: number) => ({
+			id: String(i + 1),
+			color: typeof s.color === "string" ? s.color : "#6366f1",
+			position:
+				typeof s.position === "number"
+					? Math.max(0, Math.min(100, s.position))
+					: 50,
+		}));
+	} catch {
+		return null;
+	}
+}
+
 function GradientPageContent() {
+	const searchParams = useSearchParams();
+	const router = useRouter();
+	const pathname = usePathname();
 	const { setContent } = useActionBar();
 
-	const [type, setType] = useState<GradientType>("linear");
-	const [colorModel, setColorModel] = useState<ColorModel>("hex");
-	const [angle, setAngle] = useState(90);
-	const [stops, setStops] = useState<GradientStop[]>([
-		{ id: "1", color: "#6366f1", position: 0 },
-		{ id: "2", color: "#f97316", position: 100 },
-	]);
+	const idCounterRef = useRef(0);
+	const [type, setType] = useState<GradientType>(() => {
+		const t = searchParams.get("type");
+		if (t && GRADIENT_TYPES.some((gt) => gt.value === t)) return t as GradientType;
+		return "linear";
+	});
+	const [colorModel, setColorModel] = useState<ColorModel>(() => {
+		const m = searchParams.get("model");
+		if (m && MODELS.includes(m as ColorModel)) return m as ColorModel;
+		return "hex";
+	});
+	const [angle, setAngle] = useState(() => {
+		const a = searchParams.get("angle");
+		const n = a ? Number(a) : NaN;
+		return !isNaN(n) ? Math.max(0, Math.min(360, n)) : 90;
+	});
+	const [stops, setStops] = useState<GradientStop[]>(() => {
+		const fromUrl = parseStopsFromParams(searchParams);
+		if (fromUrl) {
+			idCounterRef.current = fromUrl.length;
+			return fromUrl;
+		}
+		idCounterRef.current = 2;
+		return DEFAULT_STOPS;
+	});
+
 	const [openPickerId, setOpenPickerId] = useState<string | null>(null);
 	const [outputTab, setOutputTab] = useState("css");
+	const [saveOpen, setSaveOpen] = useState(false);
 	const pickerRef = useRef<HTMLDivElement>(null);
+
+	function nextStopId() {
+		return String(++idCounterRef.current);
+	}
 
 	const sortedStops = useMemo(
 		() => [...stops].sort((a, b) => a.position - b.position),
@@ -81,25 +129,31 @@ function GradientPageContent() {
 				return `radial-gradient(circle, ${parts.join(", ")})`;
 			case "angular":
 				return `conic-gradient(from ${angle}deg, ${parts.join(", ")})`;
-			case "diamond":
-				return `radial-gradient(50% 50% at 50% 50%, ${parts.join(", ")})`;
 		}
 	}, [type, angle, sortedStops]);
 
-	const diamondInnerCSS = useMemo(() => {
-		if (type !== "diamond" || sortedStops.length < 2) return "";
-		const inner = sortedStops
-			.slice(0, -1)
-			.map((s) => `${s.color} ${s.position}%`);
-		return `radial-gradient(50% 50% at 50% 50%, ${inner.join(", ")}, transparent 100%)`;
-	}, [type, sortedStops]);
-
-	const diamondLastColor = useMemo(() => {
-		if (type !== "diamond" || sortedStops.length === 0) return "";
-		return sortedStops[sortedStops.length - 1].color;
-	}, [type, sortedStops]);
-
 	const gradientTW = useMemo(() => `bg-[${gradientCSS}]`, [gradientCSS]);
+
+	const gradientUrl = useMemo(() => {
+		const p = new URLSearchParams();
+		p.set("type", type);
+		p.set("angle", String(angle));
+		p.set("model", colorModel);
+		p.set("stops", JSON.stringify(stops.map((s) => ({ color: s.color, position: s.position }))));
+		return `/gradient?${p.toString()}`;
+	}, [type, angle, colorModel, stops]);
+
+	useEffect(() => {
+		const p = new URLSearchParams();
+		p.set("type", type);
+		p.set("angle", String(angle));
+		p.set("model", colorModel);
+		p.set(
+			"stops",
+			JSON.stringify(stops.map((s) => ({ color: s.color, position: s.position }))),
+		);
+		router.replace(`${pathname}?${p.toString()}`, { scroll: false });
+	}, [type, angle, colorModel, stops, router, pathname]);
 
 	const flipStops = useCallback(() => {
 		setStops((prev) => {
@@ -112,20 +166,23 @@ function GradientPageContent() {
 	}, []);
 
 	const addStop = useCallback(() => {
-		const mid =
-			sortedStops.length > 1
-				? Math.round(
-						(sortedStops[0].position +
-							sortedStops[sortedStops.length - 1].position) /
-							2,
-					)
-				: 50;
+		const last = sortedStops[sortedStops.length - 1];
+		const beforeLast =
+			sortedStops.length > 1 ? sortedStops[sortedStops.length - 2] : null;
+		const newPos = beforeLast
+			? Math.round((beforeLast.position + last.position) / 2)
+			: Math.round(last.position / 2);
 		const color =
 			"#" +
 			Math.floor(Math.random() * 0xffffff)
 				.toString(16)
 				.padStart(6, "0");
-		setStops((prev) => [...prev, { id: nextStopId(), color, position: mid }]);
+		setStops((prev) => {
+			const adjusted = prev.map((s) =>
+				s.id === last.id ? { ...s, position: newPos } : s,
+			);
+			return [...adjusted, { id: nextStopId(), color, position: 100 }];
+		});
 	}, [sortedStops]);
 
 	const removeStop = useCallback((id: string) => {
@@ -184,7 +241,7 @@ function GradientPageContent() {
 	}, []);
 
 	const shuffle = useCallback(() => {
-		const types: GradientType[] = ["linear", "radial", "angular", "diamond"];
+		const types: GradientType[] = ["linear", "radial", "angular"];
 		const newType = types[Math.floor(Math.random() * types.length)];
 		const newAngle = Math.round(Math.random() * 360 / 5) * 5;
 		const stopCount = 2 + Math.floor(Math.random() * 4);
@@ -249,6 +306,16 @@ function GradientPageContent() {
 					<CopySimpleIcon size={14} />
 					<span className="hidden md:inline">Copy TW</span>
 				</Button>
+				<Button
+					variant="bare"
+					size="sm"
+					onClick={() => setSaveOpen(true)}
+					className="text-background/60 hover:text-muted"
+					aria-label="Save gradient"
+				>
+					<BookmarkSimpleIcon size={14} />
+					<span className="hidden md:inline">Save</span>
+				</Button>
 			</div>,
 		);
 		return () => setContent(null);
@@ -257,22 +324,7 @@ function GradientPageContent() {
 	return (
 		<section className="min-h-[calc(100dvh-88px)] h-full w-full max-w-3xl m-auto flex flex-col p-4 gap-5 overflow-auto items-center justify-center">
 			<div className="relative w-full h-48 md:h-56 rounded-sm border border-border overflow-hidden">
-				{type === "diamond" ? (
-					<div
-						className="w-full h-full"
-						style={{ backgroundColor: diamondLastColor }}
-					>
-						<div
-							className="w-full h-full"
-							style={{
-								background: diamondInnerCSS,
-								clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)",
-							}}
-						/>
-					</div>
-				) : (
-					<div className="w-full h-full" style={{ background: gradientCSS }} />
-				)}
+				<div className="w-full h-full" style={{ background: gradientCSS }} />
 			</div>
 
 			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 w-full max-w-lg">
@@ -322,11 +374,6 @@ function GradientPageContent() {
 							aria-label={`${t.label} gradient`}
 						>
 							{t.label}
-							{t.value === "diamond" && (
-								<span className="text-[9px] px-1 py-px rounded-full bg-muted/50 text-muted-foreground/50 font-mono uppercase leading-none">
-									Alpha
-								</span>
-							)}
 						</button>
 					))}
 				</div>
@@ -456,6 +503,15 @@ function GradientPageContent() {
 					</TabsContent>
 				</Tabs>
 			</div>
+
+			<GradientSaveDialog
+				open={saveOpen}
+				onOpenChange={setSaveOpen}
+				type={type}
+				angle={angle}
+				gradientCSS={gradientCSS}
+				url={gradientUrl}
+			/>
 		</section>
 	);
 }
@@ -523,7 +579,6 @@ function StopRow({
 							<div
 								ref={pickerRef}
 								className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 p-1.5 border border-border rounded-xl bg-background shadow-lg"
-								onPointerUp={onClosePicker}
 							>
 								<HexAlphaColorPicker
 									color={hex}
