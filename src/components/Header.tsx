@@ -31,6 +31,7 @@ const NAV_ITEMS = [
 	{ href: "/convert", label: "convert" },
 	{ href: "/palette", label: "palette" },
 	{ href: "/gradient", label: "gradient" },
+	{ href: "/saved", label: "saved" },
 ] as const;
 
 export default function Header() {
