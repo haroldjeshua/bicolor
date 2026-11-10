@@ -5,6 +5,8 @@ import Link from "next/link";
 import { HexColorPicker } from "react-colorful";
 import {
 	ArrowRightIcon,
+	ArrowsDownUpIcon,
+	ArrowsLeftRightIcon,
 	CheckIcon,
 	CopyIcon,
 	ShuffleIcon,
@@ -14,6 +16,19 @@ import { wcagRatio } from "@/lib/contrast";
 import { ALL_NAMED_COLORS, COLLECTION_COUNTS, type NamedColor } from "@/lib/colors";
 
 const SEED = "#6366f1";
+const PALETTE_STEP_NAMES = [
+	"50",
+	"100",
+	"200",
+	"300",
+	"400",
+	"500",
+	"600",
+	"700",
+	"800",
+	"900",
+	"950",
+] as const;
 
 function blendWithWhite(hex: string, amount: number) {
 	const r = parseInt(hex.slice(1, 3), 16);
@@ -30,7 +45,22 @@ async function copyText(text: string) {
 		await navigator.clipboard.writeText(text);
 		return true;
 	} catch {
-		return false;
+		// Fallback for contexts without clipboard permission (execCommand is
+		// deprecated but remains the only synchronous copy path).
+		try {
+			const textarea = document.createElement("textarea");
+			textarea.value = text;
+			textarea.setAttribute("readonly", "");
+			textarea.style.position = "absolute";
+			textarea.style.opacity = "0";
+			document.body.appendChild(textarea);
+			textarea.select();
+			const ok = document.execCommand("copy");
+			textarea.remove();
+			return ok;
+		} catch {
+			return false;
+		}
 	}
 }
 
@@ -47,8 +77,43 @@ function pickRandomName(excludeId?: string): NamedColor {
 	}
 }
 
+function ValueChip({
+	value,
+	copied,
+	onCopy,
+}: {
+	value: string;
+	copied: boolean;
+	onCopy: () => void;
+}) {
+	return (
+		<button
+			type="button"
+			onClick={onCopy}
+			aria-label={copied ? "Copied" : `Copy ${value}`}
+			className="flex min-w-0 cursor-pointer items-center gap-1 rounded-[3px] border border-border/60 bg-background px-1.5 py-1 font-mono text-[10px] text-foreground outline-none transition-colors hover:border-foreground/40 focus-visible:ring-1 focus-visible:ring-ring"
+		>
+			<span className="truncate">{value}</span>
+			{copied ? (
+				<CheckIcon
+					size={10}
+					className="shrink-0 text-emerald-600 dark:text-emerald-400"
+					aria-hidden="true"
+				/>
+			) : (
+				<CopyIcon
+					size={10}
+					className="shrink-0 text-muted-foreground/60"
+					aria-hidden="true"
+				/>
+			)}
+		</button>
+	);
+}
+
 function Tile({
 	index,
+	stagger,
 	name,
 	role,
 	href,
@@ -56,6 +121,7 @@ function Tile({
 	clip = true,
 }: {
 	index: string;
+	stagger: number;
 	name: string;
 	role: string;
 	href: string;
@@ -63,7 +129,10 @@ function Tile({
 	clip?: boolean;
 }) {
 	return (
-		<div className="group relative flex h-full flex-col gap-3 bg-background p-4 transition-colors duration-150 hover:bg-muted/20 focus-within:bg-muted/20 sm:p-5">
+		<div
+			className="group landing-tile relative flex h-full flex-col gap-3 bg-background p-4 transition-colors duration-150 hover:bg-muted/20 focus-within:bg-muted/20 sm:p-5"
+			style={{ animationDelay: `${stagger}ms` }}
+		>
 			<Link
 				href={href}
 				aria-label={`Open ${name}`}
@@ -121,13 +190,18 @@ export function ToolGrid() {
 	};
 
 	const hexParam = encodeURIComponent(color);
-	const oklchValue = convert(color, "hex", "oklch") ?? "—";
+	const [dir, setDir] = useState<"hexToOklch" | "oklchToHex">("hexToOklch");
+	const fromModel = dir === "hexToOklch" ? "hex" : "oklch";
+	const toModel = dir === "hexToOklch" ? "oklch" : "hex";
+	const fromValue = convert(color, "hex", fromModel) ?? color;
+	const toValue = convert(color, "hex", toModel) ?? "—";
 	const palette = generatePalette(color);
 
 	return (
 		<div className="relative mt-6 grid grid-cols-1 gap-px border border-border/60 bg-border/60 sm:grid-cols-2 lg:grid-cols-3">
 			{/* 01 / picker */}
 			<Tile
+				stagger={0}
 				index="01"
 				name="picker"
 				role="Pick visually, read every model at once."
@@ -147,30 +221,34 @@ export function ToolGrid() {
 
 			{/* 02 / convert */}
 			<Tile
+				stagger={70}
 				index="02"
 				name="convert"
 				role="Two fields, any pair of models."
-				href={`/convert?from=hex&value=${hexParam}&to=oklch`}
+				href={`/convert?from=${fromModel}&value=${encodeURIComponent(fromValue)}&to=${toModel}`}
 			>
 				<div className="flex w-full flex-col items-center justify-center gap-2 px-3">
 					<div className="flex max-w-full items-center gap-1.5">
-						<span className="shrink-0 rounded-[3px] border border-border/60 bg-background px-1.5 py-1 font-mono text-[10px] text-foreground">
-							{color}
-						</span>
-						<ArrowRightIcon size={10} className="shrink-0 text-muted-foreground/60" aria-hidden="true" />
+						<ValueChip
+							value={fromValue}
+							copied={copied === "from"}
+							onCopy={() => handleCopy(fromValue, "from")}
+						/>
 						<button
 							type="button"
-							onClick={() => handleCopy(oklchValue, "oklch")}
-							aria-label={copied === "oklch" ? "Copied" : `Copy ${oklchValue}`}
-							className="flex min-w-0 cursor-pointer items-center gap-1 rounded-[3px] border border-border/60 bg-background px-1.5 py-1 font-mono text-[10px] text-foreground outline-none transition-colors hover:border-foreground/40 focus-visible:ring-1 focus-visible:ring-ring"
+							onClick={() =>
+								setDir(dir === "hexToOklch" ? "oklchToHex" : "hexToOklch")
+							}
+							aria-label="Swap conversion direction"
+							className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-[3px] border border-border/60 bg-background text-muted-foreground/60 outline-none transition-colors hover:border-foreground/40 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring"
 						>
-							<span className="truncate">{oklchValue}</span>
-							{copied === "oklch" ? (
-								<CheckIcon size={10} className="shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-							) : (
-								<CopyIcon size={10} className="shrink-0 text-muted-foreground/60" aria-hidden="true" />
-							)}
+							<ArrowsLeftRightIcon size={11} aria-hidden="true" />
 						</button>
+						<ValueChip
+							value={toValue}
+							copied={copied === "to"}
+							onCopy={() => handleCopy(toValue, "to")}
+						/>
 					</div>
 					<span className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground/50">
 						hex · rgb · hsl · oklch · oklab · lch
@@ -180,6 +258,7 @@ export function ToolGrid() {
 
 			{/* 03 / palette */}
 			<Tile
+				stagger={140}
 				index="03"
 				name="palette"
 				role="One seed, an 11-step oklch scale."
@@ -198,7 +277,7 @@ export function ToolGrid() {
 							{copied?.startsWith("step-") ? "copied" : "click to copy"}
 						</span>
 					</div>
-					<div className="flex h-16 w-full overflow-hidden rounded-[3px]">
+					<div className="relative flex h-16 w-full overflow-hidden rounded-[3px]">
 						{palette.steps.map((step) => (
 							<button
 								key={step.index}
@@ -209,6 +288,28 @@ export function ToolGrid() {
 								className="h-full flex-1 cursor-pointer outline-none transition-[filter] hover:brightness-110 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
 								style={{ background: step.hex }}
 							/>
+						))}
+						{copied?.startsWith("step-") && (
+							<span
+								className="pointer-events-none absolute top-1/2 flex size-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background"
+								style={{
+									left: `${((Number(copied.slice(5)) + 0.5) / 11) * 100}%`,
+								}}
+							>
+								<CheckIcon size={9} className="text-foreground" aria-hidden="true" />
+							</span>
+						)}
+					</div>
+					<div className="flex w-full font-mono text-[7px] uppercase tracking-wider text-muted-foreground/45">
+						{PALETTE_STEP_NAMES.map((name, i) => (
+							<span
+								key={name}
+								className={`flex-1 text-center ${
+									palette.seedStep === i ? "font-bold text-foreground" : ""
+								}`}
+							>
+								{name}
+							</span>
 						))}
 					</div>
 				</div>
@@ -247,6 +348,7 @@ function GradientTile({ color }: { color: string }) {
 
 	return (
 		<Tile
+			stagger={210}
 			index="04"
 			name="gradient"
 			role="Stops, an angle, a live render."
@@ -262,17 +364,25 @@ function GradientTile({ color }: { color: string }) {
 				style={{ background: `linear-gradient(150deg, ${color} 0%, ${second} 100%)` }}
 				suppressHydrationWarning
 			>
-				{[8, 50, 92].map((left) => (
+				<div className="pointer-events-none absolute inset-x-1.5 bottom-1.5 flex items-end justify-between gap-2">
 					<span
-						key={left}
-						aria-hidden="true"
-						className="pointer-events-none absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-black/20 shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
-						style={{ left: `${left}%` }}
-					/>
-				))}
-				<span className="pointer-events-none absolute bottom-1.5 left-1.5 rounded-[2px] bg-black/55 px-1 py-0.5 font-mono text-[9px] text-white">
-					150°
-				</span>
+						suppressHydrationWarning
+						className="rounded-[2px] bg-black/60 px-1 py-0.5 font-mono text-[9px] text-white/95 backdrop-blur-[2px]"
+					>
+						{color}
+					</span>
+					<span className="flex items-center gap-1">
+						<span
+							suppressHydrationWarning
+							className="rounded-[2px] bg-black/60 px-1 py-0.5 font-mono text-[9px] text-white/95 backdrop-blur-[2px]"
+						>
+							{second}
+						</span>
+						<span className="rounded-[2px] bg-black/60 px-1 py-0.5 font-mono text-[9px] text-white/95 backdrop-blur-[2px]">
+							150°
+						</span>
+					</span>
+				</div>
 				<ShuffleIcon
 					size={12}
 					aria-hidden="true"
@@ -310,6 +420,9 @@ function ContrastTile() {
 			aria-expanded={pickerOpen === which}
 			className="flex cursor-pointer items-center gap-1.5 rounded-[2px] px-1 py-0.5 outline-none transition-colors hover:bg-muted/50 focus-visible:ring-1 focus-visible:ring-ring"
 		>
+			<span className="w-4 text-left font-mono text-[9px] uppercase text-muted-foreground/60">
+				{which}
+			</span>
 			<span
 				className="inline-block size-3.5 rounded-[2px] border border-border/60"
 				style={{ background: which === "fg" ? fg : bg }}
@@ -320,21 +433,38 @@ function ContrastTile() {
 		</button>
 	);
 
+	const swapColors = () => {
+		setFg(bg);
+		setBg(fg);
+	};
+
 	return (
 		<Tile
+			stagger={280}
 			index="05"
 			name="contrast"
 			role="WCAG 2.2 ratio, weakest point included."
 			href={href}
 			clip={false}
 		>
-			<div className="relative flex h-full w-full items-center justify-between gap-3 overflow-visible px-3">
-				<div className="flex flex-col gap-1.5">
+			<div className="relative flex h-full w-full items-center justify-between gap-2 overflow-visible px-3">
+				<div className="relative flex flex-col gap-1.5 pr-6">
 					{swatchButton("fg")}
 					{swatchButton("bg")}
+					<button
+						type="button"
+						onClick={swapColors}
+						aria-label="Swap foreground and background"
+						className="absolute right-0 top-1/2 flex size-5 -translate-y-1/2 cursor-pointer items-center justify-center rounded-[2px] text-muted-foreground/60 outline-none transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring"
+					>
+						<ArrowsDownUpIcon size={11} aria-hidden="true" />
+					</button>
 				</div>
 				<div className="text-right">
-					<div className="font-mono text-lg leading-none text-foreground">
+					<div className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground/50">
+						wcag 2.2
+					</div>
+					<div className="mt-0.5 font-mono text-lg leading-none text-foreground">
 						{ratio?.toFixed(2) ?? "--"}
 						<span className="text-xs text-muted-foreground/60">:1</span>
 					</div>
@@ -386,6 +516,7 @@ function NamesTile() {
 
 	return (
 		<Tile
+			stagger={350}
 			index="06"
 			name="names"
 			role="CSS, Tailwind and XKCD names, searchable."
