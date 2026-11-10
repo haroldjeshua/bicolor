@@ -16,10 +16,11 @@ import { useActionBar } from "@/components/ActionBar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PalettePreviewDialog from "@/components/PalettePreviewDialog";
-import { generatePalette, convert, type PaletteStep } from "@/lib/color";
+import { generatePalette, convert, type PaletteAnchor, type PaletteStep } from "@/lib/color";
 import { type ColorModel, MODEL_LABELS } from "@/lib/constants";
 import { type PresetPalette } from "@/lib/presets";
 import PresetDrawer from "@/components/PresetDrawer";
+import SegmentedControl from "@/components/names/SegmentedControl";
 import PaletteSaveDialog from "@/components/PaletteSaveDialog";
 import { HexColorPicker } from "react-colorful";
 import { sileo } from "sileo";
@@ -89,6 +90,11 @@ function PalettePageContent() {
 		return DEFAULT_MODEL;
 	});
 
+	const [anchor, setAnchor] = useState<PaletteAnchor>(() => {
+		const a = searchParams.get("anchor");
+		return a === "centered" ? "centered" : "auto";
+	});
+
 	const [loadedPreset, setLoadedPreset] = useState<PresetPalette | null>(null);
 	const [showPicker, setShowPicker] = useState(false);
 	const [presetDrawerOpen, setPresetDrawerOpen] = useState(false);
@@ -112,21 +118,22 @@ function PalettePageContent() {
 		return () => document.removeEventListener("mousedown", close);
 	}, [showPicker]);
 
-	const { steps, seedStep } = useMemo(() => generatePalette(seed), [seed]);
+	const { steps, seedStep } = useMemo(() => generatePalette(seed, anchor), [seed, anchor]);
 
 	const syncUrl = useCallback(
-		(s: string, m: ColorModel) => {
+		(s: string, m: ColorModel, a: PaletteAnchor) => {
 			const params = new URLSearchParams();
 			params.set("seed", s);
 			params.set("display", m);
+			params.set("anchor", a);
 			router.replace(`${pathname}?${params.toString()}`, { scroll: false });
 		},
 		[router, pathname],
 	);
 
 	useEffect(() => {
-		syncUrl(seed, displayModel);
-	}, [seed, displayModel, syncUrl]);
+		syncUrl(seed, displayModel, anchor);
+	}, [seed, displayModel, anchor, syncUrl]);
 
 	const handlePresetSelect = useCallback((preset: PresetPalette) => {
 		const mid = preset.colors[Math.floor(preset.colors.length / 2)];
@@ -143,6 +150,7 @@ function PalettePageContent() {
 	const handleReset = useCallback(() => {
 		setSeed(DEFAULT_SEED);
 		setDisplayModel(DEFAULT_MODEL);
+		setAnchor("auto");
 		setLoadedPreset(null);
 	}, []);
 
@@ -314,6 +322,17 @@ function PalettePageContent() {
 							</button>
 						</div>
 					)}
+					<div className="ml-auto">
+						<SegmentedControl<PaletteAnchor>
+							label="Seed position"
+							value={anchor}
+							onValueChange={setAnchor}
+							options={[
+								{ value: "auto", label: "auto" },
+								{ value: "centered", label: "centered" },
+							]}
+						/>
+					</div>
 				</div>
 			</div>
 

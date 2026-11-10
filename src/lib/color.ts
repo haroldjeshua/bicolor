@@ -261,7 +261,12 @@ export interface PaletteStep {
   lch: string;
 }
 
-export function generatePalette(seedColor: string): {
+export type PaletteAnchor = "auto" | "centered";
+
+export function generatePalette(
+  seedColor: string,
+  anchor: PaletteAnchor = "auto",
+): {
   steps: PaletteStep[];
   seedStep: number;
 } {
@@ -275,18 +280,52 @@ export function generatePalette(seedColor: string): {
   const chroma = typeof oklchColor.c === "number" ? oklchColor.c : 0.1;
   const hue = typeof oklchColor.h === "number" ? oklchColor.h : 0;
 
-  const maxLightness = 0.95;
-  const minLightness = 0.05;
-  const seedT = (maxLightness - seedL) / (maxLightness - minLightness);
-  const seedStep = Math.round(Math.max(0, Math.min(10, seedT * 10)));
+  /**
+   * Two anchoring strategies for the 11-step ramp:
+   *
+   * - `auto` (default, Tailwind/Radix semantics): absolute 0.95→0.05 ramp
+   *   with even spacing. The seed replaces the nearest step, so it floats —
+   *   a light seed lands near index 1, a dark seed near index 9. Use when
+   *   even step spacing matters more than brand position.
+   *
+   * - `centered`: the seed is always the middle step (index 5). Steps above
+   *   lerp from near-white to the seed; steps below lerp from the seed to
+   *   near-black. Lightness compression on the short side is inherent — a
+   *   near-white seed has no room for five distinct lighter steps. Use when
+   *   brand-equals-500 matters more than even spacing.
+   */
+  let seedStep: number;
+  let lightnessAt: (index: number) => number;
+  let maxDist: number;
 
-  const maxDist = Math.max(seedStep, 10 - seedStep);
+  if (anchor === "centered") {
+    // Whiter-than-cap seeds cannot be exceeded by lighter steps; anchor the
+    // cap to the seed so the ramp stays non-increasing.
+    const topLightness = Math.max(0.95, seedL);
+    const bottomLightness = Math.min(0.05, seedL);
+    seedStep = 5;
+    lightnessAt = (i) => {
+      if (i <= seedStep) {
+        const t = i / seedStep;
+        return topLightness + (seedL - topLightness) * t;
+      }
+      const t = (i - seedStep) / seedStep;
+      return seedL + (bottomLightness - seedL) * t;
+    };
+    maxDist = seedStep;
+  } else {
+    const maxLightness = 0.95;
+    const minLightness = 0.05;
+    const seedT = (maxLightness - seedL) / (maxLightness - minLightness);
+    seedStep = Math.round(Math.max(0, Math.min(10, seedT * 10)));
+    lightnessAt = (i) => maxLightness - (i / 10) * (maxLightness - minLightness);
+    maxDist = Math.max(seedStep, 10 - seedStep);
+  }
 
   const steps: PaletteStep[] = [];
 
   for (let i = 0; i < 11; i++) {
-    const t = i / 10;
-    const l = maxLightness - t * (maxLightness - minLightness);
+    const l = Math.min(1, Math.max(0, lightnessAt(i)));
 
     if (i === seedStep) {
       const hex = formatHexWithAlpha(color);
