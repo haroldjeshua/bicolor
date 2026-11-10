@@ -228,7 +228,10 @@ UX:
   stays grouped in shade rows.
 - Paint-chip swatches: name and HEX drawn on the color, with ink chosen from
   OKLCH lightness.
-- Copy HEX from the chip, copy the name or open /picker?color=... from hover
+- Copy HEX from the chip, copy the name or open /picker?color=... from hover.
+  Clicking a swatch opens a non-modal inspector (copy/download flows reused
+  from the picker) plus the ActionBar actions for the selected color (copy
+  name, picker, convert, palette, gradient, save).
   actions.
 - Nearest-name lookup: paste any color, get the closest name per collection
   with its CIEDE2000 distance; clicking a result filters the grid to it.

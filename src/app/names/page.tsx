@@ -10,17 +10,22 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import CollectionFilter from "@/components/names/CollectionFilter";
 import ColorNameGrid from "@/components/names/ColorNameGrid";
+import ColorInspector from "@/components/names/ColorInspector";
+import NamesActionBar from "@/components/names/NamesActionBar";
 import NamesSearch from "@/components/names/NamesSearch";
 import NearestColorFinder from "@/components/names/NearestColorFinder";
 import SortToggle from "@/components/names/SortToggle";
+import { useActionBar } from "@/components/ActionBar";
 import {
 	ALL_NAMED_COLORS,
+	COLOR_COLLECTION_MAP,
 	countColorsByCollection,
 	filterColorsByCollection,
 	isCollectionFilterValue,
 	isNameSortValue,
 	searchNamedColors,
 	type CollectionFilterValue,
+	type NamedColor,
 	type NameSortValue,
 	type NearestColorMatch,
 } from "@/lib/colors";
@@ -29,6 +34,7 @@ function NamesPageContent() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const pathname = usePathname();
+	const { setContent } = useActionBar();
 
 	const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
 	const [collection, setCollection] = useState<CollectionFilterValue>(() => {
@@ -44,6 +50,7 @@ function NamesPageContent() {
 	const [nearestColor, setNearestColor] = useState(
 		() => searchParams.get("color") ?? "",
 	);
+	const [selected, setSelected] = useState<NamedColor | null>(null);
 
 	const searchResults = useMemo(
 		() => searchNamedColors(ALL_NAMED_COLORS, query),
@@ -74,6 +81,22 @@ function NamesPageContent() {
 		setCollection(match.collection);
 		setQuery(match.color.name);
 	}, []);
+
+	const openInspector = useCallback((color: NamedColor) => {
+		setSelected(color);
+	}, []);
+
+	const closeInspector = useCallback(() => {
+		setSelected(null);
+	}, []);
+
+	useEffect(() => {
+		if (selected) {
+			setContent(<NamesActionBar color={selected} />);
+			return () => setContent(null);
+		}
+		setContent(null);
+	}, [selected, setContent]);
 
 	useEffect(() => {
 		const params = new URLSearchParams();
@@ -134,7 +157,7 @@ function NamesPageContent() {
 
 			<div className="pt-8">
 				{visibleColors.length > 0 ? (
-					<ColorNameGrid colors={visibleColors} sort={sort} />
+					<ColorNameGrid colors={visibleColors} sort={sort} onSelect={openInspector} />
 				) : (
 					<div className="flex flex-col items-center gap-3 py-24 text-center font-mono text-xs text-muted-foreground">
 						<p>
@@ -150,6 +173,15 @@ function NamesPageContent() {
 					</div>
 				)}
 			</div>
+
+			{selected && (
+				<ColorInspector
+					color={selected}
+					collectionName={COLOR_COLLECTION_MAP[selected.collection].shortName}
+					source={COLOR_COLLECTION_MAP[selected.collection].source}
+					onClose={closeInspector}
+				/>
+			)}
 		</section>
 	);
 }

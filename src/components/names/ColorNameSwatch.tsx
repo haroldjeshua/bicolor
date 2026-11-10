@@ -14,6 +14,7 @@ interface ColorNameSwatchProps {
 	color: NamedColor;
 	label?: string;
 	compact?: boolean;
+	onSelect?: (color: NamedColor) => void;
 }
 
 /** Text drawn on the chip flips to dark ink above this perceived lightness. */
@@ -23,6 +24,7 @@ export default function ColorNameSwatch({
 	color,
 	label,
 	compact = false,
+	onSelect,
 }: ColorNameSwatchProps) {
 	const displayLabel = label ?? color.name;
 	const ink = lightnessOf(color.hex) > INK_THRESHOLD ? "#0a0a0a" : "#ffffff";
@@ -65,10 +67,18 @@ export default function ColorNameSwatch({
 			>
 				<button
 					type="button"
-					onClick={() => copy(color.hex, "HEX")}
+					onClick={() => (onSelect ? onSelect(color) : copy(color.hex, "HEX"))}
 					className="absolute inset-0 z-0 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-					title={`Copy ${color.hex}${color.oklch ? ` · ${color.oklch}` : ""}`}
-					aria-label={`Copy HEX ${color.hex} for ${color.name}`}
+					title={
+						onSelect
+							? `Inspect ${color.name}${color.oklch ? ` · ${color.oklch}` : ""}`
+							: `Copy ${color.hex}${color.oklch ? ` · ${color.oklch}` : ""}`
+					}
+					aria-label={
+						onSelect
+							? `Inspect ${color.name}`
+							: `Copy HEX ${color.hex} for ${color.name}`
+					}
 				/>
 
 				<div

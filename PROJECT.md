@@ -70,7 +70,16 @@ src/lib/colors/
 The data layer is pure TypeScript with no React imports. Presentation lives in
 `src/components/names/`. Search, collection filters, and sort combine; URL
 state uses `?q=&collection=&sort=&color=`. Swatches are paint chips: the name
-and HEX sit on the color, and clicking copies the HEX.
+and HEX sit on the color. Hover reveals copy-HEX / copy-name / open-in-picker
+actions; clicking a swatch opens an inspector panel and the ActionBar.
+
+`/names` uses the same picker primitives as `/picker`: the inspector packs the
+name, collection meta, inline HEX copy, and a `Copy color` formats flow and a
+`Download` PNG card, while the ActionBar carries the navigation actions for the
+selected color (copy name, picker, convert, palette, gradient from the color
+with a random companion stop, save). The inspector is non-modal — the page and
+ActionBar stay interactive behind it — and both render at the same z-layer
+while a swatch is selected.
 
 `/names` also answers the reverse question. Pasting any color into the nearest
 name field runs a CIEDE2000 comparison against every collection and reports the
@@ -400,7 +409,7 @@ src/
     PaletteStrip.tsx        # 11-step horizontal swatch row
     ExportPanel.tsx         # code block + format toggle
     ColorPicker.tsx         # square picker + hue slider
-    names/                  # names search, filter, sort, swatch, grouped grid, nearest-name finder
+    names/                  # names search, filter, sort, swatch, grouped grid, nearest-name finder, inspector, ActionBar
   lib/
     color.ts                # culori wrappers
     constants.ts            # model list, HTML color names lookup

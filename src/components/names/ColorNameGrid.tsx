@@ -14,6 +14,7 @@ import ColorNameSwatch from "./ColorNameSwatch";
 interface ColorNameGridProps {
 	colors: readonly NamedColor[];
 	sort: NameSortValue;
+	onSelect?: (color: NamedColor) => void;
 }
 
 function CollectionMeta({
@@ -44,9 +45,11 @@ function CollectionMeta({
 function FlatCollection({
 	collection,
 	colors,
+	onSelect,
 }: {
 	collection: ColorCollection;
 	colors: readonly NamedColor[];
+	onSelect?: (color: NamedColor) => void;
 }) {
 	const headingId = `${collection.id}-heading`;
 
@@ -64,14 +67,22 @@ function FlatCollection({
 
 			<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
 				{colors.map((color) => (
-					<ColorNameSwatch key={color.id} color={color} />
+					<ColorNameSwatch
+						key={color.id}
+						color={color}
+						onSelect={onSelect}
+					/>
 				))}
 			</div>
 		</section>
 	);
 }
 
-export default function ColorNameGrid({ colors, sort }: ColorNameGridProps) {
+export default function ColorNameGrid({
+	colors,
+	sort,
+	onSelect,
+}: ColorNameGridProps) {
 	const cssColors = sortNamedColors(
 		colors.filter((color) => color.collection === "css"),
 		sort,
@@ -85,7 +96,11 @@ export default function ColorNameGrid({ colors, sort }: ColorNameGridProps) {
 	return (
 		<div className="flex flex-col gap-14">
 			{cssColors.length > 0 && (
-				<FlatCollection collection={CSS_COLLECTION} colors={cssColors} />
+				<FlatCollection
+					collection={CSS_COLLECTION}
+					colors={cssColors}
+					onSelect={onSelect}
+				/>
 			)}
 
 			{tailwindGroups.length > 0 && (
@@ -133,6 +148,7 @@ export default function ColorNameGrid({ colors, sort }: ColorNameGridProps) {
 												color={color}
 												label={String(color.shade)}
 												compact
+												onSelect={onSelect}
 											/>
 										))}
 									</div>
@@ -144,7 +160,11 @@ export default function ColorNameGrid({ colors, sort }: ColorNameGridProps) {
 			)}
 
 			{xkcdColors.length > 0 && (
-				<FlatCollection collection={XKCD_COLLECTION} colors={xkcdColors} />
+				<FlatCollection
+					collection={XKCD_COLLECTION}
+					colors={xkcdColors}
+					onSelect={onSelect}
+				/>
 			)}
 		</div>
 	);
