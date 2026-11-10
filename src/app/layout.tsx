@@ -83,7 +83,7 @@ export default function RootLayout({
 				>
 					<ActionBarProvider>
 						<Header />
-						<main className="pt-12 pb-10 flex-1">{children}</main>
+						<main className="pt-12">{children}</main>
 						<ActionBar />
 					</ActionBarProvider>
 					<DemoColorSync />

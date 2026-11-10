@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 export default function Home() {
 	return (
 		<>
-			<section className="min-h-[calc(100dvh-88px)] flex flex-col items-center justify-center h-full px-4 gap-12 py-12">
+			<section className="min-h-[calc(100dvh-48px)] flex flex-col items-center justify-center h-full px-4 gap-12 pb-16 pt-12">
 				<div className="flex flex-col items-center justify-center gap-3">
 					<Link href="/">
 						<Logo className="size-24 inline-block" />

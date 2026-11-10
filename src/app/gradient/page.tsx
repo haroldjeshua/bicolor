@@ -5,29 +5,27 @@ import {
 	useState,
 	useCallback,
 	useEffect,
-	useRef,
 	useMemo,
 } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import ColorSwatch from "@/components/ColorSwatch";
 import GradientSaveDialog from "@/components/GradientSaveDialog";
+import ExportPanel from "@/components/gradient/ExportPanel";
 import { useActionBar } from "@/components/ActionBar";
 import { Button } from "@/components/ui/button";
-import { convert } from "@/lib/color";
+import { mixColors, convert } from "@/lib/color";
 import { MODELS, MODEL_LABELS, type ColorModel } from "@/lib/constants";
-import { HexAlphaColorPicker } from "react-colorful";
-import { sileo } from "sileo";
 import {
-	CopySimpleIcon,
 	PlusCircleIcon,
-	MinusCircleIcon,
 	ArrowsLeftRightIcon,
 	ArrowCounterClockwiseIcon,
 	ShuffleIcon,
 	BookmarkSimpleIcon,
-	SlidersHorizontalIcon,
+	CompassIcon,
+	LineVerticalIcon,
+	TargetIcon,
+	ChartPieIcon,
+	ExportIcon,
 } from "@phosphor-icons/react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
 	Select,
 	SelectContent,
@@ -35,13 +33,19 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import GradientBar from "@/components/gradient/GradientBar";
+import StopRow from "@/components/gradient/StopRow";
+import ScrubInput from "@/components/gradient/ScrubInput";
+import type { GradientStop, GradientType } from "@/components/gradient/types";
 
-type GradientType = "linear" | "radial" | "angular";
-
-const GRADIENT_TYPES: { value: GradientType; label: string }[] = [
-	{ value: "linear", label: "Linear" },
-	{ value: "radial", label: "Radial" },
-	{ value: "angular", label: "Angular" },
+const GRADIENT_TYPES: {
+	value: GradientType;
+	label: string;
+	icon: typeof LineVerticalIcon;
+}[] = [
+	{ value: "linear", label: "Linear", icon: LineVerticalIcon },
+	{ value: "radial", label: "Radial", icon: TargetIcon },
+	{ value: "angular", label: "Angular", icon: ChartPieIcon },
 ];
 
 const DEFAULT_STOPS = [
@@ -49,10 +53,12 @@ const DEFAULT_STOPS = [
 	{ id: "2", color: "#f97316", position: 100 },
 ] satisfies GradientStop[];
 
-interface GradientStop {
-	id: string;
-	color: string;
-	position: number;
+function SectionLabel({ children }: { children: React.ReactNode }) {
+	return (
+		<span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+			{children}
+		</span>
+	);
 }
 
 function parseStopsFromParams(params: URLSearchParams): GradientStop[] | null {
@@ -74,13 +80,18 @@ function parseStopsFromParams(params: URLSearchParams): GradientStop[] | null {
 	}
 }
 
+const clampPosition = (value: number) => Math.max(0, Math.min(100, value));
+
+/** Stop ids are numeric strings, so the next id is always one past the max. */
+const nextStopId = (existing: readonly GradientStop[]) =>
+	String(Math.max(0, ...existing.map((s) => Number(s.id) || 0)) + 1);
+
 function GradientPageContent() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const pathname = usePathname();
 	const { setContent } = useActionBar();
 
-	const idCounterRef = useRef(0);
 	const [type, setType] = useState<GradientType>(() => {
 		const t = searchParams.get("type");
 		if (t && GRADIENT_TYPES.some((gt) => gt.value === t)) return t as GradientType;
@@ -99,21 +110,14 @@ function GradientPageContent() {
 	const [stops, setStops] = useState<GradientStop[]>(() => {
 		const fromUrl = parseStopsFromParams(searchParams);
 		if (fromUrl) {
-			idCounterRef.current = fromUrl.length;
 			return fromUrl;
 		}
-		idCounterRef.current = 2;
 		return DEFAULT_STOPS;
 	});
 
 	const [openPickerId, setOpenPickerId] = useState<string | null>(null);
-	const [outputTab, setOutputTab] = useState("css");
+	const [exportOpen, setExportOpen] = useState(false);
 	const [saveOpen, setSaveOpen] = useState(false);
-	const pickerRef = useRef<HTMLDivElement>(null);
-
-	function nextStopId() {
-		return String(++idCounterRef.current);
-	}
 
 	const sortedStops = useMemo(
 		() => [...stops].sort((a, b) => a.position - b.position),
@@ -121,7 +125,11 @@ function GradientPageContent() {
 	);
 
 	const gradientCSS = useMemo(() => {
-		const parts = sortedStops.map((s) => `${s.color} ${s.position}%`);
+		const serializeStop = (color: string) =>
+			convert(color, "hex", colorModel) ?? color;
+		const parts = sortedStops.map(
+			(s) => `${serializeStop(s.color)} ${s.position}%`,
+		);
 		switch (type) {
 			case "linear":
 				return `linear-gradient(${angle}deg, ${parts.join(", ")})`;
@@ -130,7 +138,7 @@ function GradientPageContent() {
 			case "angular":
 				return `conic-gradient(from ${angle}deg, ${parts.join(", ")})`;
 		}
-	}, [type, angle, sortedStops]);
+	}, [type, angle, sortedStops, colorModel]);
 
 	const gradientTW = useMemo(() => `bg-[${gradientCSS}]`, [gradientCSS]);
 
@@ -156,34 +164,68 @@ function GradientPageContent() {
 	}, [type, angle, colorModel, stops, router, pathname]);
 
 	const flipStops = useCallback(() => {
-		setStops((prev) => {
-			const maxPos = Math.max(...prev.map((s) => s.position));
-			return prev.map((s) => ({
-				...s,
-				position: maxPos - s.position,
-			}));
-		});
+		setStops((prev) =>
+			prev.map((s) => ({ ...s, position: 100 - s.position })),
+		);
 	}, []);
 
+	/** Color that would sit between two neighboring stops. */
+	const interpolatedColor = useCallback(
+		(position: number) => {
+			const before = [...sortedStops]
+				.reverse()
+				.find((s) => s.position <= position);
+			const after = sortedStops.find((s) => s.position >= position);
+
+			if (before && after && before.id !== after.id) {
+				const t =
+					(position - before.position) /
+					Math.max(after.position - before.position, 1e-6);
+				const mixed = mixColors(before.color, after.color, t);
+				if (mixed) return mixed;
+			}
+
+			return before?.color ?? after?.color ?? "#6366f1";
+		},
+		[sortedStops],
+	);
+
+	/** Insert a stop at an arbitrary position, colored to match the gradient there. */
+	const addStopAt = useCallback(
+		(position: number) => {
+			const clamped = clampPosition(Math.round(position * 10) / 10);
+			setStops((prev) => [
+				...prev,
+				{
+					id: nextStopId(prev),
+					color: interpolatedColor(clamped),
+					position: clamped,
+				},
+			]);
+		},
+		[interpolatedColor],
+	);
+
+	/** Split the widest gap in the gradient with a new stop. */
 	const addStop = useCallback(() => {
-		const last = sortedStops[sortedStops.length - 1];
-		const beforeLast =
-			sortedStops.length > 1 ? sortedStops[sortedStops.length - 2] : null;
-		const newPos = beforeLast
-			? Math.round((beforeLast.position + last.position) / 2)
-			: Math.round(last.position / 2);
-		const color =
-			"#" +
-			Math.floor(Math.random() * 0xffffff)
-				.toString(16)
-				.padStart(6, "0");
-		setStops((prev) => {
-			const adjusted = prev.map((s) =>
-				s.id === last.id ? { ...s, position: newPos } : s,
-			);
-			return [...adjusted, { id: nextStopId(), color, position: 100 }];
-		});
-	}, [sortedStops]);
+		const positions = [...new Set(sortedStops.map((s) => s.position))].sort(
+			(a, b) => a - b,
+		);
+
+		let bestStart = 0;
+		let widestGap = positions[0] ?? 100;
+
+		for (let i = 0; i < positions.length - 1; i += 1) {
+			const gap = positions[i + 1] - positions[i];
+			if (gap > widestGap) {
+				widestGap = gap;
+				bestStart = positions[i];
+			}
+		}
+
+		const end = positions.find((p) => p > bestStart) ?? 100;
+		addStopAt((bestStart + end) / 2);
+	}, [addStopAt, sortedStops]);
 
 	const removeStop = useCallback((id: string) => {
 		setStops((prev) => {
@@ -199,37 +241,10 @@ function GradientPageContent() {
 	const updateStopPosition = useCallback((id: string, position: number) => {
 		setStops((prev) =>
 			prev.map((s) =>
-				s.id === id
-					? { ...s, position: Math.max(0, Math.min(100, position)) }
-					: s,
+				s.id === id ? { ...s, position: clampPosition(position) } : s,
 			),
 		);
 	}, []);
-
-	const handleCopyCSS = useCallback(async () => {
-		try {
-			await navigator.clipboard.writeText(`background: ${gradientCSS};`);
-			sileo.success({ title: "CSS copied" });
-		} catch {}
-	}, [gradientCSS]);
-
-	const handleCopyTW = useCallback(async () => {
-		try {
-			await navigator.clipboard.writeText(gradientTW);
-			sileo.success({ title: "Tailwind class copied" });
-		} catch {}
-	}, [gradientTW]);
-
-	const handleCopyOutput = useCallback(async () => {
-		const text =
-			outputTab === "css" ? `background: ${gradientCSS};` : gradientTW;
-		try {
-			await navigator.clipboard.writeText(text);
-			sileo.success({
-				title: outputTab === "css" ? "CSS copied" : "Tailwind class copied",
-			});
-		} catch {}
-	}, [outputTab, gradientCSS, gradientTW]);
 
 	const reset = useCallback(() => {
 		setType("linear");
@@ -250,17 +265,20 @@ function GradientPageContent() {
 		).sort((a, b) => a - b);
 		positions[0] = 0;
 		positions[stopCount - 1] = 100;
-		const newStops: GradientStop[] = positions.map((p, i) => {
-			const hex =
-				"#" +
-				Math.floor(Math.random() * 0xffffff)
-					.toString(16)
-					.padStart(6, "0");
-			return { id: nextStopId(), color: hex, position: p };
-		});
+
 		setType(newType);
 		setAngle(newAngle);
-		setStops(newStops);
+		setStops((prev) => {
+			const base = Math.max(0, ...prev.map((s) => Number(s.id) || 0)) + 1;
+			return positions.map((p, i) => {
+				const hex =
+					"#" +
+					Math.floor(Math.random() * 0xffffff)
+						.toString(16)
+						.padStart(6, "0");
+				return { id: String(base + i), color: hex, position: p };
+			});
+		});
 	}, []);
 
 	useEffect(() => {
@@ -289,22 +307,13 @@ function GradientPageContent() {
 				<Button
 					variant="bare"
 					size="sm"
-					onClick={handleCopyCSS}
+					onClick={() => setExportOpen((v) => !v)}
 					className="text-background/60 hover:text-muted"
-					aria-label="Copy gradient CSS"
+					aria-label="Export gradient"
+					aria-expanded={exportOpen}
 				>
-					<CopySimpleIcon size={14} />
-					<span className="hidden md:inline">Copy CSS</span>
-				</Button>
-				<Button
-					variant="bare"
-					size="sm"
-					onClick={handleCopyTW}
-					className="text-background/60 hover:text-muted"
-					aria-label="Copy Tailwind class"
-				>
-					<CopySimpleIcon size={14} />
-					<span className="hidden md:inline">Copy TW</span>
+					<ExportIcon size={14} />
+					<span className="hidden md:inline">Export</span>
 				</Button>
 				<Button
 					variant="bare"
@@ -319,190 +328,168 @@ function GradientPageContent() {
 			</div>,
 		);
 		return () => setContent(null);
-	}, [handleCopyCSS, handleCopyTW, reset, shuffle, setContent]);
+	}, [reset, shuffle, setContent, exportOpen]);
+
+	const showAngle = type === "linear" || type === "angular";
 
 	return (
-		<section className="min-h-[calc(100dvh-88px)] h-full w-full max-w-3xl m-auto flex flex-col p-4 gap-5 overflow-auto items-center justify-center">
-			<div className="relative w-full h-48 md:h-56 rounded-sm border border-border overflow-hidden">
-				<div className="w-full h-full" style={{ background: gradientCSS }} />
-			</div>
-
-			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 w-full max-w-lg">
-				<div className="flex items-center justify-between">
-					<Select
-						value={colorModel}
-						onValueChange={(v) => setColorModel(v as ColorModel)}
-					>
-						<SelectTrigger
-							className="w-fit font-mono text-xs h-7 px-2 gap-1"
-							aria-label="Color model"
-						>
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							{MODELS.map((m) => (
-								<SelectItem
-									key={m}
-									value={m}
-									className="font-mono text-xs cursor-pointer"
-								>
-									{MODEL_LABELS[m]}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-					<button
-						type="button"
-						onClick={flipStops}
-						className="sm:hidden p-1.5 text-muted-foreground/60 hover:text-foreground transition-colors cursor-pointer"
-						aria-label="Flip gradient"
-					>
-						<ArrowsLeftRightIcon size={16} />
-					</button>
-				</div>
-				<div className="flex items-center gap-1.5  justify-between flex-wrap sm:flex-1 sm:justify-center">
-					{GRADIENT_TYPES.map((t) => (
-						<button
-							key={t.value}
-							type="button"
-							onClick={() => setType(t.value)}
-							className={`px-3 py-1.5 text-xs font-mono rounded-sm border transition-colors cursor-pointer flex items-center gap-1.5 ${
-								type === t.value
-									? "border-ring text-foreground bg-muted/30"
-									: "border-border/50 text-muted-foreground/60 hover:text-foreground hover:border-border"
-							}`}
-							aria-label={`${t.label} gradient`}
-						>
-							{t.label}
-						</button>
-					))}
-				</div>
-				<button
-					type="button"
-					onClick={flipStops}
-					className="hidden sm:flex p-1.5 text-muted-foreground/60 hover:text-foreground transition-colors cursor-pointer"
-					aria-label="Flip gradient"
-				>
-					<ArrowsLeftRightIcon size={16} />
-				</button>
-			</div>
-
+		<>
+		<section className="flex h-[calc(100dvh-48px)] w-full flex-col overflow-hidden pb-16 lg:flex-row">
+			{/* Stage: the gradient is the body, not a thumbnail */}
 			<div
-				className={`flex items-center gap-3 w-full max-w-lg ${type === "linear" || type === "angular" ? "" : "invisible pointer-events-none"}`}
+				role="img"
+				aria-label={`Gradient preview: ${gradientCSS}`}
+				className="relative h-56 w-full shrink-0 overflow-hidden bg-muted/20 sm:h-64 lg:h-full lg:min-w-0 lg:flex-1"
 			>
-				<label className="text-xs font-mono text-muted-foreground/60 w-8 shrink-0">
-					{angle}°
-				</label>
-				<div className="flex-1 relative pt-3 pb-1">
-					<input
-						type="range"
-						min={0}
-						max={360}
-						step={5}
-						value={angle}
-						onChange={(e) => setAngle(Number(e.target.value))}
-						className="w-full h-1.5 accent-foreground cursor-pointer"
-						aria-label="Gradient angle"
-						list="angle-marks"
-					/>
-					<datalist id="angle-marks">
-						<option value={0} />
-						<option value={45} />
-						<option value={90} />
-						<option value={135} />
-						<option value={180} />
-						<option value={225} />
-						<option value={270} />
-						<option value={315} />
-						<option value={360} />
-					</datalist>
-					<div className="flex justify-between w-full px-[3px] -mt-0.5">
-						{["0°", "", "90°", "", "180°", "", "270°", "", "360°"].map(
-							(label, i) => (
-								<span
-									key={i}
-									className={`text-[10px] font-mono ${label ? "text-muted-foreground/50" : "text-transparent"}`}
+				<div
+					className="absolute inset-0"
+					style={{ background: gradientCSS }}
+				/>
+			</div>
+
+			{/* Side panel: controls + export, like a design tool */}
+			<aside
+				aria-label="Gradient controls"
+				className="flex min-h-0 w-full flex-1 flex-col border-t border-border/60 bg-background lg:w-[330px] lg:flex-none lg:border-l lg:border-t-0 xl:w-[340px]"
+			>
+				<div className="min-h-0 flex-1 overflow-y-auto">
+					{/* Type */}
+					<div className="border-b border-border/60 px-4 py-4">
+						<SectionLabel>Type</SectionLabel>
+						<div
+							role="group"
+							aria-label="Gradient type"
+							className="mt-2 grid grid-cols-3 border border-border/70 bg-muted/20 p-1"
+						>
+							{GRADIENT_TYPES.map((t) => (
+								<button
+									key={t.value}
+									type="button"
+									onClick={() => setType(t.value)}
+									aria-pressed={type === t.value}
+									className={`flex h-9 cursor-pointer items-center justify-center gap-1.5 px-2 font-mono text-[11px] leading-none transition-colors active:scale-[0.97] ${
+										type === t.value
+											? "bg-foreground text-background"
+											: "text-muted-foreground hover:text-foreground"
+									}`}
 								>
-									{label || "·"}
-								</span>
-							),
+									<t.icon size={14} aria-hidden weight="regular" />
+									{t.label}
+								</button>
+							))}
+						</div>
+
+						{showAngle && (
+							<div className="mt-3">
+								<div className="mb-1.5 flex items-center justify-between">
+									<SectionLabel>Angle</SectionLabel>
+								</div>
+								<ScrubInput
+									value={angle}
+									min={0}
+									max={360}
+									step={5}
+									fineStep={1}
+									unitsPerPixel={1.8}
+									fineUnitsPerPixel={0.18}
+									onValueChange={(value) => setAngle(Math.round(value))}
+									ariaLabel="Gradient angle"
+									suffix="°"
+									icon={<CompassIcon size={12} aria-hidden />}
+									className="w-full"
+								/>
+							</div>
 						)}
 					</div>
-				</div>
-			</div>
 
-			<div className="flex items-center justify-between w-full max-w-lg">
-				<span className="text-xs font-mono text-muted-foreground/60 uppercase tracking-wider">
-					Stops
-				</span>
-				<button
-					type="button"
-					onClick={addStop}
-					className="flex items-center gap-1 text-xs font-mono text-muted-foreground/60 hover:text-foreground transition-colors cursor-pointer"
-					aria-label="Add stop"
-				>
-					<PlusCircleIcon size={14} />
-					<span>Add</span>
-				</button>
-			</div>
+					{/* Stops */}
+					<div className="border-b border-border/60 px-4 py-4">
+						<div className="flex items-center justify-between">
+							<SectionLabel>Stops</SectionLabel>
+							<div className="flex items-center gap-1">
+								<Select
+									value={colorModel}
+									onValueChange={(value) =>
+										setColorModel(value as ColorModel)
+									}
+								>
+									<SelectTrigger
+										className="h-7 w-fit gap-1 px-2 font-mono text-[11px]"
+										aria-label="Color model"
+									>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{MODELS.map((m) => (
+											<SelectItem
+												key={m}
+												value={m}
+												className="cursor-pointer font-mono text-[11px]"
+											>
+												{MODEL_LABELS[m]}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+								<button
+									type="button"
+									onClick={flipStops}
+									className="flex size-7 cursor-pointer items-center justify-center text-muted-foreground/60 transition-colors hover:text-foreground"
+									aria-label="Flip gradient"
+									title="Flip gradient"
+								>
+									<ArrowsLeftRightIcon size={14} aria-hidden />
+								</button>
+								<button
+									type="button"
+									onClick={addStop}
+									className="flex h-7 cursor-pointer items-center gap-1 px-1.5 font-mono text-[11px] text-muted-foreground/60 transition-colors hover:text-foreground"
+									aria-label="Add stop"
+								>
+									<PlusCircleIcon size={14} aria-hidden />
+									Add
+								</button>
+							</div>
+						</div>
 
-			<div className="w-full max-w-lg flex flex-col gap-2">
-				{sortedStops.map((stop, i) => (
-					<StopRow
-						key={stop.id}
-						stop={stop}
-						index={i}
-						colorModel={colorModel}
-						isPickerOpen={openPickerId === stop.id}
-						onTogglePicker={() =>
-							setOpenPickerId(openPickerId === stop.id ? null : stop.id)
-						}
-						onClosePicker={() => setOpenPickerId(null)}
-						onColorChange={(c) => updateStopColor(stop.id, c)}
-						onPositionChange={(p) => updateStopPosition(stop.id, p)}
-						onRemove={() => removeStop(stop.id)}
-						canRemove={stops.length > 2}
-						pickerRef={pickerRef}
-					/>
-				))}
-			</div>
+						<div className="mt-2">
+							<GradientBar
+								stops={sortedStops}
+								gradientCSS={gradientCSS}
+								onPositionChange={updateStopPosition}
+								onAddStop={addStopAt}
+							/>
+						</div>
 
-			<div className="w-full max-w-lg flex flex-col gap-1">
-				<span className="text-xs font-mono text-muted-foreground/60 uppercase tracking-wider">
-					Output
-				</span>
-				<Tabs
-					defaultValue="css"
-					onValueChange={setOutputTab}
-					className="w-full"
-				>
-					<div className="flex items-center justify-between mb-2">
-						<TabsList variant="line">
-							<TabsTrigger value="css">CSS</TabsTrigger>
-							<TabsTrigger value="tw">Tailwind</TabsTrigger>
-						</TabsList>
-						<Button
-							variant="bare"
-							size="xs"
-							onClick={handleCopyOutput}
-							aria-label="Copy code"
-						>
-							Copy
-						</Button>
+						<div className="mt-2 flex flex-col gap-1.5">
+							{sortedStops.map((stop, i) => (
+								<StopRow
+									key={stop.id}
+									stop={stop}
+									index={i}
+									colorModel={colorModel}
+									isPickerOpen={openPickerId === stop.id}
+									onTogglePicker={() =>
+										setOpenPickerId(openPickerId === stop.id ? null : stop.id)
+									}
+									onClosePicker={() => setOpenPickerId(null)}
+									onColorChange={(color) => updateStopColor(stop.id, color)}
+									onPositionChange={(position) =>
+										updateStopPosition(stop.id, position)
+									}
+									onRemove={() => removeStop(stop.id)}
+									canRemove={stops.length > 2}
+								/>
+							))}
+						</div>
+
+						<p className="mt-2 font-mono text-[10px] leading-relaxed text-muted-foreground/50">
+							Click the gradient strip to insert a stop at that position.
+						</p>
 					</div>
-					<TabsContent value="css">
-						<pre className="p-3 rounded-sm bg-muted/30 border border-border whitespace-pre-wrap break-all text-muted-foreground font-mono text-xs leading-relaxed min-h-20">
-							{"background: "}
-							{gradientCSS}
-						</pre>
-					</TabsContent>
-					<TabsContent value="tw">
-						<pre className="p-3 rounded-sm bg-muted/30 border border-border whitespace-pre-wrap break-all text-muted-foreground font-mono text-xs leading-relaxed min-h-20">
-							{gradientTW}
-						</pre>
-					</TabsContent>
-				</Tabs>
-			</div>
+				</div>
+
+			</aside>
 
 			<GradientSaveDialog
 				open={saveOpen}
@@ -513,164 +500,14 @@ function GradientPageContent() {
 				url={gradientUrl}
 			/>
 		</section>
-	);
-}
 
-function StopRow({
-	stop,
-	index,
-	colorModel,
-	isPickerOpen,
-	onTogglePicker,
-	onClosePicker,
-	onColorChange,
-	onPositionChange,
-	onRemove,
-	canRemove,
-	pickerRef,
-}: {
-	stop: GradientStop;
-	index: number;
-	colorModel: ColorModel;
-	isPickerOpen: boolean;
-	onTogglePicker: () => void;
-	onClosePicker: () => void;
-	onColorChange: (color: string) => void;
-	onPositionChange: (pos: number) => void;
-	onRemove: () => void;
-	canRemove: boolean;
-	pickerRef: React.RefObject<HTMLDivElement | null>;
-}) {
-	const [showTweak, setShowTweak] = useState(false);
-	const hex = useMemo(
-		() => convert(stop.color, "hex", "hex") ?? stop.color,
-		[stop.color],
-	);
-	const displayColor = useMemo(
-		() => convert(stop.color, "hex", colorModel) ?? stop.color,
-		[stop.color, colorModel],
-	);
-
-	return (
-		<div className="flex items-center gap-2 px-3 py-2 rounded-sm border border-border/50 bg-muted/15">
-			<div className="flex items-center gap-2 shrink-0">
-				<span className="text-xs font-mono text-muted-foreground w-6">
-					{index + 1}
-				</span>
-				<div className="relative">
-					<button
-						type="button"
-						onClick={(e) => {
-							e.stopPropagation();
-							onTogglePicker();
-						}}
-						className="shrink-0 cursor-pointer flex"
-						aria-label={`Pick color for stop ${index + 1}`}
-					>
-						<ColorSwatch
-							color={stop.color}
-							size="sm"
-							className="p-0.5 border border-border rounded-sm"
-						/>
-					</button>
-					{isPickerOpen && (
-						<>
-							<div className="fixed inset-0 z-40" onPointerUp={onClosePicker} />
-							<div
-								ref={pickerRef}
-								className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 p-1.5 border border-border rounded-xl bg-background shadow-lg"
-							>
-								<HexAlphaColorPicker
-									color={hex}
-									onChange={onColorChange}
-									className="rounded-lg"
-								/>
-							</div>
-						</>
-					)}
-				</div>
-			</div>
-
-			<input
-				type="text"
-				value={displayColor}
-				onChange={(e) => {
-					const hex = convert(e.target.value, colorModel, "hex");
-					if (hex) onColorChange(hex);
-				}}
-				className="flex-1 min-w-0 h-8 bg-transparent border border-border rounded-sm px-2 font-mono text-xs text-foreground outline-none focus:border-ring transition-colors"
-				spellCheck={false}
-				aria-label={`Color value for stop ${index + 1}`}
-			/>
-
-			<div className="flex items-center gap-1 shrink-0">
-				<div className="relative">
-					<div className="flex items-center h-8 bg-transparent border border-border rounded-sm pl-1 pr-2 focus-within:border-ring transition-colors">
-						<button
-							type="button"
-							onClick={(e) => {
-								e.stopPropagation();
-								setShowTweak((v) => !v);
-							}}
-							className="shrink-0 text-muted-foreground/40 hover:text-foreground transition-colors cursor-pointer p-0.5"
-							aria-label="Scrub stop position"
-						>
-							<SlidersHorizontalIcon size={12} />
-						</button>
-						<input
-							type="text"
-							inputMode="numeric"
-							value={String(stop.position)}
-							onChange={(e) => {
-								const val = e.target.value.replace(/^0+(?=\d)/, "");
-								const num = val === "" ? 0 : Number(val);
-								if (!isNaN(num)) onPositionChange(num);
-							}}
-							onBlur={() => {
-								const clamped = Math.max(0, Math.min(100, stop.position));
-								if (clamped !== stop.position) onPositionChange(clamped);
-							}}
-							className="w-14 h-full bg-transparent font-mono text-xs text-foreground text-center outline-none"
-							aria-label={`Stop ${index + 1} position`}
-						/>
-					</div>
-					{showTweak && (
-						<>
-							<div
-								className="fixed inset-0 z-40"
-								onPointerUp={() => setShowTweak(false)}
-							/>
-							<div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 p-2.5 border border-border rounded-lg bg-background shadow-lg w-36">
-								<input
-									type="range"
-									min={0}
-									max={100}
-									value={stop.position}
-									onChange={(e) => onPositionChange(Number(e.target.value))}
-									className="w-full h-1.5 accent-foreground cursor-pointer"
-									aria-label="Stop position slider"
-								/>
-								<div className="flex justify-between text-[10px] font-mono text-muted-foreground/40 mt-0.5">
-									<span>0%</span>
-									<span>100%</span>
-								</div>
-							</div>
-						</>
-					)}
-				</div>
-				<span className="text-xs text-muted-foreground/60">%</span>
-			</div>
-
-			<button
-				type="button"
-				onClick={onRemove}
-				disabled={!canRemove}
-				className="shrink-0 text-muted-foreground/40 hover:text-foreground disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer"
-				aria-label={`Remove stop ${index + 1}`}
-			>
-				<MinusCircleIcon size={16} />
-			</button>
-		</div>
+		<ExportPanel
+			open={exportOpen}
+			onOpenChange={setExportOpen}
+			gradientCSS={gradientCSS}
+			gradientTW={gradientTW}
+		/>
+		</>
 	);
 }
 
@@ -678,7 +515,7 @@ export default function GradientPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="flex items-center justify-center h-full text-muted-foreground font-mono text-sm">
+				<div className="flex h-full items-center justify-center font-mono text-sm text-muted-foreground">
 					Loading...
 				</div>
 			}
