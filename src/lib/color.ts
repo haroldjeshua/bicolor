@@ -5,6 +5,7 @@ import {
   formatCss,
   converter,
   clampChroma,
+  differenceCiede2000,
   type Color,
 } from "culori";
 import { HTML_COLOR_NAMES, type ColorModel } from "./constants";
@@ -13,6 +14,7 @@ const toRgb = converter("rgb");
 const toOklch = converter("oklch");
 const toOklab = converter("oklab");
 const toLch = converter("lch");
+const ciede2000 = differenceCiede2000();
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
@@ -117,6 +119,42 @@ export function serialize(color: Color, model: ColorModel): string | null {
 
 export function isValid(value: string, model: ColorModel): boolean {
   return parse(value, model) !== null;
+}
+
+export interface OklchChannels {
+  readonly l: number;
+  readonly c: number;
+  readonly h: number;
+}
+
+/** Perceptual lightness, chroma, and hue for any parseable color string. */
+export function oklchChannels(value: string): OklchChannels | null {
+  const color = parse(value);
+  if (!color) return null;
+
+  const oklch = toOklch(color);
+  if (!oklch) return null;
+
+  return {
+    l: typeof oklch.l === "number" ? oklch.l : 0,
+    c: typeof oklch.c === "number" ? oklch.c : 0,
+    h: typeof oklch.h === "number" ? oklch.h : 0,
+  };
+}
+
+/** CIEDE2000 perceptual distance between two parsed colors (0 is identical). */
+export function distanceCiede2000(a: Color, b: Color): number {
+  return ciede2000(a, b);
+}
+
+/** CIEDE2000 distance between two color strings, or null when unparseable. */
+export function colorDistance(a: string, b: string): number | null {
+  const first = parse(a);
+  const second = parse(b);
+
+  if (!first || !second) return null;
+
+  return ciede2000(first, second);
 }
 
 export function convertAll(

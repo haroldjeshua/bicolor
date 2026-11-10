@@ -194,6 +194,56 @@ Do not add any new features in this phase. If you notice something missing that 
 
 ---
 
+## Phase 6 — /names
+
+```
+Bicolor phase 6: build the /names page as a searchable reference library of
+established color naming systems. This is a lookup tool, not a color generator.
+
+Collections:
+1. CSS Named Colors — reuse HTML_COLOR_NAMES from lib/constants.ts. Preserve
+   all 148 standard opaque keywords, including aliases such as aqua/cyan and
+   gray/grey. Validate values against CSS Color Module Level 4.
+2. Tailwind CSS v4 — include all 26 official families and all 11 shades
+   (50–950). Extract exact OKLCH values from the installed official theme
+   (tailwindcss@4.3.0/theme.css). Derive HEX through the existing culori
+   wrapper. Do not substitute Tailwind v3 values.
+3. XKCD Color Survey — 926 CC0 crowdsourced names, generated from a checked-in
+   snapshot. Keep original spellings and typos. Omit explicit scatological
+   names from the bundled copy.
+
+Data layer (src/lib/colors/):
+  types.ts        — collection, named-color, sort, and nearest-match types
+  css-named.ts    — adapts the existing keyword dataset
+  tailwind-v4.ts  — generated, versioned palette data
+  xkcd.ts         — generated survey snapshot (CC0)
+  index.ts        — collection metadata, search, filter, sort, nearest helpers
+
+UX:
+- Page heading and one short description.
+- Search by name or HEX (with or without "#"), ignoring spaces, punctuation,
+  and hyphens.
+- Collection filters: All, CSS, Tailwind, XKCD. Search and filters combine.
+- Sort flat collections by name or by hue (achromatic colors last). Tailwind
+  stays grouped in shade rows.
+- Paint-chip swatches: name and HEX drawn on the color, with ink chosen from
+  OKLCH lightness.
+- Copy HEX from the chip, copy the name or open /picker?color=... from hover
+  actions.
+- Nearest-name lookup: paste any color, get the closest name per collection
+  with its CIEDE2000 distance; clicking a result filters the grid to it.
+- Keyboard-accessible and responsive; light and dark themes.
+- URL state: ?q=&collection=&sort=&color=.
+
+Keep datasets static and locally bundled. No backend or external API calls.
+Preserve aliases and distinct names sharing the same HEX. Do not implement
+role-based combo schemes — that is a separate future feature (/combos).
+Add tests for collection integrity, aliases, HEX validation, search, sort,
+and nearest-name lookup.
+```
+
+---
+
 ## Status
 
 | Phase | Items | Status |
@@ -210,7 +260,10 @@ Do not add any new features in this phase. If you notice something missing that 
 | 5 | OG image (`/api/og`) | ✅ Done — `next/og` ImageResponse with culori |
 | 5 | Light mode (theme toggle) | ✅ Done via `next-themes` |
 | 5 | README | ✅ Done |
+| 6 | /names (CSS + Tailwind v4 + XKCD reference) | ✅ Complete |
+| 6 | /names nearest-name lookup (CIEDE2000) | ✅ Complete |
 | Future | /saved (Auth + Database) | ⏳ On hold |
+| Future | `/combos` (2 dominant + 1 accent schemes; replaces `/harmony`) | ⏳ Not started |
 
 ---
 

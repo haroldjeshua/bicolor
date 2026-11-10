@@ -182,7 +182,7 @@ Ship only the essentials first.
 # Features Explicitly Deferred
 
 These are intentionally out of scope for MVP:
-- harmony systems
+- role-based color schemes (planned as `/combos`)
 - gradients
 - gamut visualization
 - image extraction
@@ -222,6 +222,25 @@ Palettes should:
 - generate usable CSS-native outputs
 
 Prefer OKLCH-based generation over naive HSL manipulation.
+
+---
+
+# Named Color Philosophy
+
+Named colors are reference data, not generated decoration.
+
+The `/names` page should:
+- preserve each collection's original names, values, aliases, and shade structure
+- make search and copying faster than opening a separate reference site
+- keep datasets static, local, and attributed to their source
+- let the colors carry the interface
+
+Do not deduplicate distinct names that share a HEX value, and do not rewrite
+source values to fit a house naming convention.
+
+Nearest-name lookup is still a lookup: it reports the closest established name
+in each collection and its perceptual distance, and it never invents a name.
+This is a lookup library, not a naming engine.
 
 ---
 

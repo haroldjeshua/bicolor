@@ -7,7 +7,7 @@
 
 ## What It Is
 
-**Bicolor** is a color utility web app focused on three core workflows: picking, converting, and building palettes. It is framework-agnostic in its output — CSS variables, Tailwind v4 (`.css`-based), or raw values — and designed to be used without thinking about how to use it.
+**Bicolor** is a color utility web app focused on four core workflows: picking, converting, building palettes, and browsing established color names. It is framework-agnostic in its output — CSS variables, Tailwind v4 (`.css`-based), or raw values — and designed to be used without thinking about how to use it.
 
 The guiding principle: **every page should have one job, and it should do it immediately.**
 
@@ -21,6 +21,7 @@ The guiding principle: **every page should have one job, and it should do it imm
 | `/picker` | Pick a color, see it in all color models at once, copy any |
 | `/convert` | Two inputs, swappable, convert between any two color models |
 | `/palette` | Generate a full palette from one color, export as CSS variables |
+| `/names` | Search established color naming systems by name or HEX, find the nearest name for any color, copy values |
 
 ---
 
@@ -32,6 +33,52 @@ The guiding principle: **every page should have one job, and it should do it imm
 - `oklch` — `oklch(0.28 0.04 220)` ← primary target
 - `oklab` — `oklab(0.28 -0.01 -0.04)`
 - `lch` — `lch(27% 5 220)`
+
+---
+
+## Named Color Reference (`/names`)
+
+`/names` is a searchable reference library, not a color generator. It has one
+job: help users find colors through established names, HEX values, and their
+original design-system collections.
+
+Three static collections ship:
+
+| Collection | Contents | Source |
+|------------|----------|--------|
+| CSS Named Colors | 148 standard opaque keywords, aliases preserved | [CSS Color Module Level 4](https://www.w3.org/TR/css-color/#named-colors) |
+| Tailwind CSS v4 | 26 families × 11 shades (50–950) = 286 colors | [Tailwind CSS v4 colors](https://tailwindcss.com/docs/colors) |
+| XKCD Color Survey | 926 everyday names, CC0, original spellings preserved | [XKCD color survey](https://xkcd.com/color/rgb.txt) |
+
+The Tailwind and XKCD data are generated from source, not hand-authored:
+Tailwind from the installed `tailwindcss@4.3.0/theme.css` (original OKLCH
+values preserved, HEX derived through culori), XKCD from a checked-in snapshot
+of the survey. Explicit scatological names are omitted from the bundled XKCD
+copy; everything else, typos included, is preserved.
+
+Architecture:
+
+```
+src/lib/colors/
+  types.ts        # collection, named color, sort, and nearest-match types
+  css-named.ts    # adapts the existing HTML_COLOR_NAMES dataset
+  tailwind-v4.ts  # generated, versioned official palette data
+  xkcd.ts         # generated survey snapshot (CC0)
+  index.ts        # metadata, HEX derivation, search/filter/sort/nearest helpers
+```
+
+The data layer is pure TypeScript with no React imports. Presentation lives in
+`src/components/names/`. Search, collection filters, and sort combine; URL
+state uses `?q=&collection=&sort=&color=`. Swatches are paint chips: the name
+and HEX sit on the color, and clicking copies the HEX.
+
+`/names` also answers the reverse question. Pasting any color into the nearest
+name field runs a CIEDE2000 comparison against every collection and reports the
+closest name per set, with its distance. Clicking a result filters the grid to
+that entry.
+
+Aliases and duplicate HEX values are intentional: distinct names are never
+deduplicated merely because they resolve to the same color.
 
 ---
 
@@ -147,23 +194,37 @@ Users can set a custom palette name. Structure:
 - Sanitize to kebab-case automatically (`My Brand` → `my-brand`)
 - This is **one small input field in the ActionBar** — not a separate feature, not a modal. Keep it that way.
 
-**Color name generation (e.g. "Cornflower Blue"):**
-Skip for v1. It requires a lookup table or an API call, it's rarely useful in a dev workflow, and it adds mental overhead ("wait, what's this color called") that contradicts the tool's goal. Defer to the future features pile.
+**Color name lookup (e.g. "Cornflower Blue"):**
+The nearest-name lookup ships on `/names`: paste a color, get the closest
+established name per collection. Coining a new name for a color that has none
+("invented naming") stays out of scope — the page reports the closest existing
+name, it does not generate one.
 
 **HTML color names:**
 Worth including as a 7th output model in `/picker`'s all-models panel — just a nearest-match lookup from a static list. Label it `CSS Named` and show it as read-only (not an input format). Low effort, occasionally delightful.
 
 ---
 
-## Harmony — Scope Decision
+## Color Schemes — Scope Decision
 
-**Verdict: defer, but scaffold the concept.**
+**Verdict: defer to `/combos`, one backlog item.**
 
-Color harmony (analogous, complementary, triadic, etc.) is genuinely useful but it belongs in a `/harmony` page that doesn't exist yet. Adding it to `/palette` or `/picker` would split the focus of those pages.
+Three different jobs get confused:
+
+| Page | Job | Input → output |
+|------|-----|----------------|
+| `/palette` | Expand one hue into a scale | 1 seed → 11 steps |
+| `/names` | Catalog and lookup | name ↔ color |
+| `/combos` (future) | Relate colors by role | 2 dominant + 1 accent |
+
+A scheme is about relationships between hues, so it does not belong in a
+single-hue scale page or a name catalog. It absorbs the earlier `/harmony`
+idea: harmony modes become presets inside `/combos`, not a separate page.
 
 What you *can* do in v1 without overcomplicating things: on `/palette`, show a small secondary swatch of the complementary color (hue + 180°) as a silent Easter egg — no labels, no explanation. Just: here's what's across the wheel. Users who know, know.
 
-**Future `/harmony` page:** input one color → see 5–6 harmony schemes rendered as swatch rows → copy any scheme as CSS variables.
+**Future `/combos` page:** pick two colors → get a suggested third accent →
+preview the trio on a tiny mock UI → label each swatch using `/names`.
 
 ---
 
@@ -173,14 +234,14 @@ These are **explicitly out of scope** for v1. Documented here so they don't cree
 
 | Feature | Notes |
 |---|---|
-| `/harmony` | Analogous, complementary, split-complementary, triadic, tetradic, rectangle |
+| `/combos` | Role-based schemes: 2 dominant colors + 1 accent, 60-30-10 preview on a mock UI, harmony presets (replaces `/harmony`) |
 | `/gradient` | oklch gradient generator with gamut warning |
 | `/bulk` | Multi-line converter |
 | `/gamut` | Gamut visualization, Display-P3 vs sRGB |
 | Image color extractor | Upload image → extract dominant colors |
 | Image gradient extractor | Upload image → generate CSS gradient |
 | A11y / contrast checker | WCAG AA/AAA pass/fail against a background color |
-| Color name generation | Nearest named color lookup / generative naming |
+| Generative color naming | `/names` is a reference library; nearest-name lookup only, invented naming remains out of scope |
 
 ---
 
@@ -328,6 +389,7 @@ src/
     convert/page.tsx
     picker/page.tsx
     palette/page.tsx
+    names/page.tsx        # searchable named-color reference
   components/
     Header.tsx
     ActionBar.tsx           # slot — content injected per page
@@ -338,10 +400,12 @@ src/
     PaletteStrip.tsx        # 11-step horizontal swatch row
     ExportPanel.tsx         # code block + format toggle
     ColorPicker.tsx         # square picker + hue slider
+    names/                  # names search, filter, sort, swatch, grouped grid, nearest-name finder
   lib/
     color.ts                # culori wrappers
     constants.ts            # model list, HTML color names lookup
     palette.ts              # generateScale(), complementary()
+    colors/                 # static collection data + search/filter helpers
   styles/
     app.css                 # Tailwind v4 @theme tokens
 ```
@@ -362,9 +426,9 @@ src/
 
 ## Scope Boundary (Read When Tempted)
 
-If a new idea doesn't serve `/picker`, `/convert`, or `/palette` directly — it goes in the backlog. Not in a comment. Not in a TODO. In the backlog table above, with a note.
+If a new idea doesn't serve `/picker`, `/convert`, `/palette`, or `/names` directly — it goes in the backlog. Not in a comment. Not in a TODO. In the backlog table above, with a note.
 
-The three pages. The three jobs. That's v1.
+The core pages. One clear job each. That's v1.
 
 ---
 

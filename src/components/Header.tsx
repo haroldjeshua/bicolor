@@ -31,6 +31,7 @@ const NAV_ITEMS = [
 	{ href: "/convert", label: "convert" },
 	{ href: "/palette", label: "palette" },
 	{ href: "/gradient", label: "gradient" },
+	{ href: "/names", label: "names" },
 	{ href: "/saved", label: "saved" },
 ] as const;
 
@@ -55,7 +56,7 @@ export default function Header() {
 
 	return (
 		<header className="fixed top-0 left-0 right-0 h-12 border-b bg-background flex items-center px-4 md:px-6 z-50">
-			<div className="grid grid-cols-2 md:grid-cols-3 w-full items-center">
+			<div className="grid grid-cols-2 md:grid-cols-[1fr_auto_1fr] w-full items-center">
 				<Link
 					href="/"
 					className="justify-self-start font-mono text-sm tracking-tight text-foreground hover:text-muted-foreground transition-colors"
@@ -64,7 +65,7 @@ export default function Header() {
 					<span>bicolor</span>
 				</Link>
 
-				<nav className="hidden md:flex items-center justify-center gap-8">
+				<nav className="hidden md:flex items-center justify-center gap-5 lg:gap-8">
 					{NAV_ITEMS.map((item) => (
 						<Link
 							key={item.href}
@@ -75,7 +76,12 @@ export default function Header() {
 									: "text-muted-foreground hover:text-foreground"
 							}`}
 						>
-							<span className={isActive(item.href) ? "" : "invisible"}>/</span>
+							<span
+								className={isActive(item.href) ? "" : "invisible"}
+								aria-hidden="true"
+							>
+								/
+							</span>
 							{item.label}
 						</Link>
 					))}
@@ -249,7 +255,10 @@ export default function Header() {
 						{(
 							[
 								["Login & Saved", "Auth, saved palettes, organize your library"],
-								["Harmony", "Complementary, analogous, triadic color schemes"],
+								[
+									"Combos",
+									"Two dominant colors plus one accent, with a 60-30-10 preview",
+								],
 								[
 									"Contrast",
 									"WCAG accessibility checker for your color combos",
