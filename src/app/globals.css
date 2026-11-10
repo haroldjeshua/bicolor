@@ -151,6 +151,23 @@
 
 }
 
+/* Landing grid: restrained one-time stagger on mount. */
+@keyframes landing-rise {
+	from {
+		opacity: 0;
+		transform: translateY(14px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+@media (prefers-reduced-motion: no-preference) {
+	.landing-tile {
+		animation: landing-rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+}
+
 /* Contrast checker: row-link highlight. outline preserves the tested colors. */
 .ws-hl-pass,
 .ws-hl-fail {

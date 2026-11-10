@@ -201,7 +201,7 @@ export default function SavedPage() {
 	return (
 		<section className="min-h-[calc(100dvh-48px)] h-full w-full max-w-5xl m-auto flex flex-col px-4 py-16 gap-6">
 			<div className="flex flex-col gap-1">
-				<h1 className="font-mono text-sm text-foreground tracking-tight">
+				<h1 className="font-mono text-2xl text-foreground tracking-tight">
 					Saved
 				</h1>
 				<p className="font-mono text-[10px] text-muted-foreground/50">
