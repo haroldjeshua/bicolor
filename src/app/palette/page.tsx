@@ -256,7 +256,7 @@ function PalettePageContent() {
 	);
 
 	return (
-		<section className="min-h-[calc(100dvh-88px)] h-full w-full max-w-7xl m-auto flex flex-col px-4 pt-24 pb-32 gap-6 items-center justify-start">
+		<section className="min-h-[calc(100dvh-48px)] h-full w-full max-w-7xl m-auto flex flex-col px-4 pt-24 pb-32 gap-6 items-center justify-start">
 			<div className="w-full max-w-2xl flex flex-col gap-4">
 				<div className="flex items-center gap-3 w-full">
 					<div className="relative flex items-center shrink-0">

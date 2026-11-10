@@ -6,6 +6,7 @@ import {
   converter,
   clampChroma,
   differenceCiede2000,
+  interpolate as culoriInterpolate,
   type Color,
 } from "culori";
 import { HTML_COLOR_NAMES, type ColorModel } from "./constants";
@@ -155,6 +156,24 @@ export function colorDistance(a: string, b: string): number | null {
   if (!first || !second) return null;
 
   return ciede2000(first, second);
+}
+
+/**
+ * Midpoint between two color strings in OKLCH, used to color a stop inserted
+ * between two existing stops in the gradient editor.
+ */
+export function mixColors(a: string, b: string, t: number): string | null {
+  const first = parse(a);
+  const second = parse(b);
+
+  if (!first || !second) return null;
+
+  try {
+    const interpolator = culoriInterpolate([first, second], "oklch");
+    return formatHex(interpolator(t))?.toLowerCase() ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export function convertAll(
