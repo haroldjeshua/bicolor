@@ -7,7 +7,7 @@
 
 ## What It Is
 
-**Bicolor** is a color utility web app focused on four core workflows: picking, converting, building palettes, and browsing established color names. It is framework-agnostic in its output — CSS variables, Tailwind v4 (`.css`-based), or raw values — and designed to be used without thinking about how to use it.
+**Bicolor** is a color utility web app focused on five core workflows: picking, converting, checking contrast, building palettes, and browsing established color names. It is framework-agnostic in its output - CSS variables, Tailwind v4 (`.css`-based), or raw values - and designed to be used without thinking about how to use it.
 
 The guiding principle: **every page should have one job, and it should do it immediately.**
 
@@ -20,6 +20,7 @@ The guiding principle: **every page should have one job, and it should do it imm
 | `/` | Landing / entry — explain what bicolor does, navigate to tools |
 | `/picker` | Pick a color, see it in all color models at once, copy any |
 | `/convert` | Two inputs, swappable, convert between any two color models |
+| `/contrast` | Check WCAG contrast between your foreground and background, with suggested fixes |
 | `/palette` | Generate a full palette from one color, export as CSS variables |
 | `/names` | Search established color naming systems by name or HEX, find the nearest name for any color, copy values |
 
@@ -88,6 +89,33 @@ that entry.
 
 Aliases and duplicate HEX values are intentional: distinct names are never
 deduplicated merely because they resolve to the same color.
+
+---
+
+## Contrast Checker (`/contrast`)
+
+WCAG 2.2 evaluation for your foreground on a background. One job: answer
+"is my text readable on this color?" without opening another tool.
+
+- `src/lib/contrast.ts` is a pure module: `wcagRatio()` (culori-backed),
+  `evaluateContrast()` for AA/AAA at normal and large text sizes, and
+  `suggestPassingColor()` / `suggestPassingColorMulti()` which walks OKLCH
+  lightness (hue preserved) to the nearest foreground that meets the
+  threshold — clamped into gamut via culori, then re-measured before being
+  offered, never trusted unverified.
+- Gradient mode evaluates the **weakest sampled point** along the gradient
+  axis (sampling documented in `src/lib/gradient-contrast.ts`); scrim solving
+  re-measures at the solved opacity.
+- The ActionBar carries: Swap, Copy ratio, Share, **Save contrast image**
+  (bicolor card canvas export via `downloadContrastCard()`).
+- The page shows a live ratio readout, a realistic text preview (normal
+  paragraph, large text, low-emphasis copy, outlined and filled buttons), and
+  row-by-row AA/AAA/UI pass-fail. Non-text UI is a separate 3:1 criterion,
+  not conflated with AA-large text.
+- URL state: `?fg=%23ffffff&bg=%23000000` — restorable and shareable via the
+  ActionBar (`Swap` / `Copy ratio` / `Share`).
+- The `contrast.test.ts` suite covers 21:1 both ways, identical colors,
+  threshold boundaries, suggestion validity, gamut and achromatic handling.
 
 ---
 
@@ -249,7 +277,6 @@ These are **explicitly out of scope** for v1. Documented here so they don't cree
 | `/gamut` | Gamut visualization, Display-P3 vs sRGB |
 | Image color extractor | Upload image → extract dominant colors |
 | Image gradient extractor | Upload image → generate CSS gradient |
-| A11y / contrast checker | WCAG AA/AAA pass/fail against a background color |
 | Generative color naming | `/names` is a reference library; nearest-name lookup only, invented naming remains out of scope |
 
 ---
@@ -396,6 +423,7 @@ src/
     layout.tsx              # <Header> + <ActionBar> shell
     page.tsx                # / landing
     convert/page.tsx
+    contrast/page.tsx
     picker/page.tsx
     palette/page.tsx
     names/page.tsx        # searchable named-color reference
@@ -412,6 +440,7 @@ src/
     names/                  # names search, filter, sort, swatch, grouped grid, nearest-name finder, inspector, ActionBar
   lib/
     color.ts                # culori wrappers
+    contrast.ts             # WCAG ratio + suggestion engine
     constants.ts            # model list, HTML color names lookup
     palette.ts              # generateScale(), complementary()
     colors/                 # static collection data + search/filter helpers

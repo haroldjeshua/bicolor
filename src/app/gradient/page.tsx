@@ -8,6 +8,7 @@ import {
 	useMemo,
 } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
 import GradientSaveDialog from "@/components/GradientSaveDialog";
 import ExportPanel from "@/components/gradient/ExportPanel";
 import { useActionBar } from "@/components/ActionBar";
@@ -25,6 +26,7 @@ import {
 	TargetIcon,
 	ChartPieIcon,
 	ExportIcon,
+	CircleHalfIcon,
 } from "@phosphor-icons/react";
 import {
 	Select,
@@ -150,6 +152,14 @@ function GradientPageContent() {
 		p.set("stops", JSON.stringify(stops.map((s) => ({ color: s.color, position: s.position }))));
 		return `/gradient?${p.toString()}`;
 	}, [type, angle, colorModel, stops]);
+
+	const gradientContrastUrl = useMemo(() => {
+		const p = new URLSearchParams();
+		p.set("mode", "gradient");
+		p.set("angle", String(angle));
+		p.set("stops", JSON.stringify(stops.map((s) => ({ color: s.color, position: s.position }))));
+		return `/contrast?${p.toString()}`;
+	}, [angle, stops]);
 
 	useEffect(() => {
 		const p = new URLSearchParams();
@@ -325,10 +335,36 @@ function GradientPageContent() {
 					<BookmarkSimpleIcon size={14} />
 					<span className="hidden md:inline">Save</span>
 				</Button>
+
+				{type === "linear" ? (
+					<Button
+						variant="bare"
+						size="sm"
+						asChild
+						className="text-background/60 hover:text-muted"
+					>
+						<Link href={gradientContrastUrl} aria-label="Check contrast of this gradient">
+							<CircleHalfIcon size={14} />
+							<span className="hidden md:inline">Check contrast</span>
+						</Link>
+					</Button>
+				) : (
+					<Button
+						variant="bare"
+						size="sm"
+						disabled
+						title="Check contrast is available for linear gradients only"
+						aria-label="Check contrast (linear gradients only)"
+						className="text-background/30"
+					>
+						<CircleHalfIcon size={14} />
+						<span className="hidden md:inline">Check contrast</span>
+					</Button>
+				)}
 			</div>,
 		);
 		return () => setContent(null);
-	}, [reset, shuffle, setContent, exportOpen]);
+	}, [reset, shuffle, setContent, exportOpen, gradientContrastUrl, type]);
 
 	const showAngle = type === "linear" || type === "angular";
 

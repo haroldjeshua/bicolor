@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import ColorSwatch from "@/components/ColorSwatch";
 import { ArrowsOutLineHorizontalIcon, MinusCircleIcon } from "@phosphor-icons/react";
 import { HexAlphaColorPicker } from "react-colorful";
@@ -43,6 +43,17 @@ export default function StopRow({
 		[stop.color, colorModel],
 	);
 
+	useEffect(() => {
+		if (!isPickerOpen) return;
+
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape") onClosePicker();
+		};
+
+		document.addEventListener("keydown", onKeyDown);
+		return () => document.removeEventListener("keydown", onKeyDown);
+	}, [isPickerOpen, onClosePicker]);
+
 	return (
 		<div className="flex items-center gap-2 border border-border/60 bg-muted/15 p-1.5">
 			<div className="relative shrink-0">
@@ -58,20 +69,20 @@ export default function StopRow({
 					<ColorSwatch
 						color={stop.color}
 						size="sm"
-						className="rounded-sm border border-border/70 p-0.5"
+						className="rounded-md border border-border/70 p-0.5"
 					/>
 				</button>
 				{isPickerOpen && (
 					<>
 						<div
 							className="fixed inset-0 z-40"
-							onPointerUp={onClosePicker}
+							onPointerDown={onClosePicker}
 						/>
-						<div className="absolute top-full left-0 z-50 mt-2 border border-border bg-background p-1.5 shadow-lg">
+						<div className="absolute top-full left-0 z-50 mt-2 rounded-xl border border-border bg-background p-1.5 shadow-lg">
 							<HexAlphaColorPicker
 								color={hex}
 								onChange={onColorChange}
-								className="rounded-sm"
+								className="rounded-lg"
 							/>
 						</div>
 					</>

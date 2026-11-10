@@ -29,6 +29,7 @@ import {
 const NAV_ITEMS = [
 	{ href: "/picker", label: "picker" },
 	{ href: "/convert", label: "convert" },
+	{ href: "/contrast", label: "contrast" },
 	{ href: "/palette", label: "palette" },
 	{ href: "/gradient", label: "gradient" },
 	{ href: "/names", label: "names" },
@@ -258,10 +259,6 @@ export default function Header() {
 								[
 									"Combos",
 									"Two dominant colors plus one accent, with a 60-30-10 preview",
-								],
-								[
-									"Contrast",
-									"WCAG accessibility checker for your color combos",
 								],
 								["Tokens", "Export design tokens for Tailwind, CSS, Figma"],
 							] as const

@@ -2,9 +2,9 @@
 
 Zero-overhead color tool for design engineers.
 
-**Pick.** A color visually with an interactive picker. **Convert.** Between hex, rgb, hsl, oklch, oklab, lch with live preview. **Palette.** Generate harmonious 11-step oklch scales from any seed color, exportable as CSS, Tailwind v4, or JSON. **Names.** Search established color naming systems by keyword or HEX.
+**Pick.** A color visually with an interactive picker. **Convert.** Between hex, rgb, hsl, oklch, oklab, lch with live preview. **Contrast.** Check WCAG ratios for your text on a background, with passing-color suggestions. **Palette.** Generate harmonious 11-step oklch scales from any seed color, exportable as CSS, Tailwind v4, or JSON. **Names.** Search established color naming systems by keyword or HEX.
 
-All state is URL-shareable — every picker setting, conversion pair, palette seed, and names search is encoded in the URL. Share a color in one click.
+All state is URL-shareable — every picker setting, conversion pair, palette seed, contrast pair, and names search is encoded in the URL. Share a color in one click.
 
 ---
 
@@ -24,6 +24,7 @@ All state is URL-shareable — every picker setting, conversion pair, palette se
 |-------|---------|
 | `/picker` | Pick a color and inspect every model |
 | `/convert` | Convert between color models with shareable state |
+| `/contrast` | Check WCAG contrast between your foreground and background |
 | `/palette` | Generate an 11-step OKLCH scale and export tokens |
 | `/gradient` | Build CSS gradients |
 | `/names` | Search CSS, Tailwind v4, and XKCD color names |

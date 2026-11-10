@@ -151,6 +151,22 @@
 
 }
 
+/* Contrast checker: row-link highlight. outline preserves the tested colors. */
+.ws-hl-pass,
+.ws-hl-fail {
+	outline-style: solid;
+	outline-width: 2px;
+	outline-offset: 2px;
+}
+.ws-hl-pass {
+	outline-color: light-dark(#15803d, #4ade80);
+	border-color: light-dark(#15803d, #4ade80);
+}
+.ws-hl-fail {
+	outline-color: light-dark(#b91c1c, #f87171);
+	border-color: light-dark(#b91c1c, #f87171);
+}
+
 [data-sileo-viewport][data-sileo-viewport] {
 	z-index: 100;
 }

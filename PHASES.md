@@ -265,8 +265,44 @@ and nearest-name lookup.
 | 5 | README | ✅ Done |
 | 6 | /names (CSS + Tailwind v4 + XKCD reference) | ✅ Complete |
 | 6 | /names nearest-name lookup (CIEDE2000) | ✅ Complete |
+| 7 | /contrast (WCAG checker + Suggest Passing Color) | ✅ Complete |
 | Future | /saved (Auth + Database) | ⏳ On hold |
 | Future | `/combos` (2 dominant + 1 accent schemes; replaces `/harmony`) | ⏳ Not started |
+
+---
+
+## Phase 7 — /contrast
+
+```
+Bicolor phase 7: build the /contrast page as a WCAG contrast evaluation
+tool. One job: tell you if your foreground works on this background.
+
+Data layer (src/lib/contrast.ts):
+  wcagRatio(foreground, background) — culori-backed WCAG ratio, 1:1 to 21:1
+  evaluateContrast(ratio)           — AA/AAA pass/fail at normal & large sizes
+  suggestPassingColor(fg, bg, target) — OKLCH lightness walk to the nearest
+                                        foreground that meets target; gamut-
+                                        safe via culori clampChroma; re-measured
+                                        before being offered
+
+UX:
+- Foreground and background ColorInputs (hex model by default, switchable)
+  with clickable swatch popover pickers, and a swap control.
+- Live ratio readout (aria-live polite) with a large mono numeral.
+- Realistic preview card: heading, body text, low-emphasis copy, and
+  outlined/filled button samples.
+- WCAG result rows: AA normal (4.5), AA large (3), AAA normal (7),
+  AAA large (4.5), non-text UI (3) — with explicit pass/fail icons and
+  labels. Non-text UI is a distinct criterion from text contrast.
+- Suggestion rows for AA and AAA reach; each suggestion shows its hex and
+  measured ratio, with an Apply button that applies it to the foreground.
+- URL state: ?fg=&bg= (hex). ActionBar: Swap / Copy Ratio / Share.
+
+Keep culori's math canonical. Do not conflate the three distinct WCAG
+criteria families. AAA suggestion returns null when unreachable for this
+background. Tests cover both 21:1 directions, 1:1 identity, threshold
+boundaries, suggestion validity, gamut, and achromatic foregrounds.
+```
 
 ---
 

@@ -25,6 +25,7 @@ interface ColorInputProps {
 	placeholder?: string;
 	readonly?: boolean;
 	hideOptions?: ColorModel[];
+	inputAriaLabel?: string;
 }
 
 export default function ColorInput({
@@ -35,6 +36,7 @@ export default function ColorInput({
 	placeholder,
 	readonly,
 	hideOptions,
+	inputAriaLabel,
 }: ColorInputProps) {
 	const handleCopy = useCallback(async () => {
 		if (!value) return;
@@ -68,7 +70,7 @@ export default function ColorInput({
 					placeholder={placeholder ?? MODEL_PLACEHOLDERS[model]}
 					className="h-9 w-full bg-transparent border border-border rounded-sm px-2 py-1.5 pr-8 font-mono text-sm text-foreground placeholder:text-muted-foreground/40 outline-none focus:border-ring transition-colors"
 					spellCheck={false}
-					aria-label="Color value"
+					aria-label={inputAriaLabel ?? "Color value"}
 				/>
 				{value && (
 					<button

@@ -15,6 +15,244 @@ export function formatColorLines(
 	];
 }
 
+export interface ContrastCardInput {
+	fg: string;
+	bg: string;
+	/** 1–21; pass null to render the ratio as unknown (e.g. invalid input). */
+	ratio: number | null;
+	aa: { normal: boolean; large: boolean };
+	aaa: { normal: boolean; large: boolean };
+	nonTextUI: boolean;
+	suggestionAA?: { color: string; ratio: number } | null;
+	suggestionAAA?: { color: string; ratio: number } | null;
+	mode?: "solid" | "gradient";
+	gradientStops?: { color: string; position: number }[];
+	gradientAngle?: number;
+	filename?: string;
+}
+
+export async function downloadContrastCard({
+	fg,
+	bg,
+	ratio,
+	aa,
+	aaa,
+	nonTextUI,
+	suggestionAA,
+	suggestionAAA,
+	mode = "solid",
+	gradientStops,
+	gradientAngle = 90,
+	filename,
+}: ContrastCardInput) {
+	// Measurement constants — every vertical line of ink lands in its own row.
+	const dpr = 2;
+	const P = 32;              // outer padding
+	const GAP = 12;            // gap between blocks
+	const W = 600;
+	const mono = '"Geist Mono","SF Mono","Cascadia Code","Consolas",monospace';
+	const sans = '"Geist","Inter","Helvetica Neue",Arial,sans-serif';
+	const ratioText = ratio === null ? "-- : 1" : `${ratio.toFixed(2)} : 1`;
+	const name =
+		filename ??
+		(mode === "gradient"
+			? `bicolor-contrast-gradient-${fg.replace("#", "")}`
+			: `bicolor-contrast-solid-${fg.replace("#", "")}-on-${bg.replace("#", "")}`);
+
+	const ratioH = 64;
+	const rowsH = 5 * 24 + 12;
+	const suggestionsCount = (suggestionAA ? 1 : 0) + (suggestionAAA ? 1 : 0);
+	const suggestionsH = suggestionsCount > 0 ? suggestionsCount * 24 + 30 : 0;
+
+	const h =
+		P +        // top padding
+		20 +       // header row
+		GAP +
+		176 +      // preview block
+		GAP +
+		ratioH +
+		GAP +
+		rowsH +
+		(suggestionsCount > 0 ? GAP + suggestionsH : 0) +
+		P;         // bottom padding
+
+	const canvas = document.createElement("canvas");
+	canvas.width = W * dpr;
+	canvas.height = h * dpr;
+	const ctx = canvas.getContext("2d");
+	if (!ctx) return;
+	ctx.scale(dpr, dpr);
+
+
+	// ── Chrome background ─────────────────────────────────────────────
+	ctx.fillStyle = "#18181b";
+	ctx.fillRect(0, 0, W, h);
+
+	const fill = (color: string, x: number, y: number, w: number, h: number) => {
+		ctx.fillStyle = color;
+		ctx.fillRect(x, y, w, h);
+	};
+
+	// ── Header: wordmark ───────────────────────────────────────────────
+	ctx.textBaseline = "top";
+	ctx.textAlign = "left";
+	ctx.fillStyle = "#f4f4f5";
+	ctx.font = `700 15px ${sans}`;
+	ctx.fillText("bicolor — contrast", P, P);
+
+	let y = P + 20 + GAP;
+
+	// ── Preview block (fg on bg, full-bleed horizontal) ───────────────
+	const previewY = y;
+	if (mode === "gradient" && gradientStops && gradientStops.length >= 2) {
+		const rad = (gradientAngle * Math.PI) / 180;
+		const dx = Math.sin(rad), dy = -Math.cos(rad);
+		const halfW = W / 2, halfH = 176 / 2;
+		const len = Math.abs(halfW * dx) + Math.abs(halfH * dy);
+		const cx2 = W / 2, cy = previewY + 176 / 2;
+		const grad = ctx.createLinearGradient(cx2 - dx * len, cy - dy * len, cx2 + dx * len, cy + dy * len);
+		const stops = [...gradientStops].sort((a, b) => a.position - b.position);
+		for (const s of stops) grad.addColorStop(s.position / 100, s.color);
+		ctx.fillStyle = grad;
+		ctx.fillRect(0, previewY, W, 176);
+	} else {
+		fill(bg, 0, previewY, W, 176);
+	}
+
+	ctx.textAlign = "left";
+	ctx.fillStyle = fg;
+	ctx.font = `600 92px ${sans}`;
+	ctx.textBaseline = "middle";
+	ctx.fillText("Aa", P, previewY + 56);
+
+	ctx.globalAlpha = 0.78;
+	ctx.font = `400 13px ${sans}`;
+	ctx.fillText(
+		"The quick brown fox jumps over the lazy dog",
+		P,
+		previewY + 130,
+	);
+	ctx.globalAlpha = 1;
+
+	y += 176 + GAP;
+
+	// ── Ratio block ───────────────────────────────────────────────────
+	ctx.textBaseline = "alphabetic";
+	ctx.fillStyle = "#71717a";
+	ctx.font = `600 10px ${mono}`;
+	ctx.textAlign = "left";
+	ctx.fillText("WCAG CONTRAST RATIO", P, y + 12);
+
+	// Right side: fg / bg pair, stacked and aligned with ratio label
+	ctx.font = `600 10px ${mono}`;
+
+	ctx.textAlign = "left";
+	ctx.fillStyle = "#71717a";
+	ctx.fillText("FG", W - P - 116, y + 36);
+	ctx.fillText("BG", W - P - 116, y + 54);
+
+	ctx.textAlign = "right";
+	ctx.fillStyle = "#f4f4f5";
+	ctx.fillText(fg, W - P, y + 36);
+	ctx.fillStyle = "#a1a1aa";
+	ctx.fillText(mode === "gradient" ? "gradient" : bg, W - P, y + 54);
+
+	// Numeral baseline — leave room for the right column
+	ctx.textAlign = "left";
+	ctx.fillStyle = "#f4f4f5";
+	ctx.font = `600 44px ${mono}`;
+	ctx.fillText(ratioText, P, y + 52);
+
+	y += ratioH + GAP;
+
+	// ── Divider ───────────────────────────────────────────────────────
+	fill("#27272a", P, y, W - P * 2, 1);
+	y += 12;
+
+	// ── WCAG result rows ──────────────────────────────────────────────
+	const row = (label: string, detail: string, pass: boolean) => {
+		// dot
+		ctx.beginPath();
+		ctx.arc(P + 4, y + 7, 4, 0, Math.PI * 2);
+		ctx.fillStyle = pass ? "#22c55e" : "#ef4444";
+		ctx.fill();
+
+		// label col, fixed width
+		ctx.textAlign = "left";
+		ctx.fillStyle = "#f4f4f5";
+		ctx.font = `500 11px ${mono}`;
+		ctx.fillText(label, P + 18, y + 12);
+
+		ctx.fillStyle = "#71717a";
+		ctx.fillText(detail, P + 86, y + 12);
+
+		ctx.fillStyle = pass ? "#22c55e" : "#ef4444";
+		ctx.textAlign = "right";
+		ctx.fillText(pass ? "PASS" : "FAIL", W - P, y + 12);
+
+		y += 24;
+	};
+
+	row("AA", "Normal text 4.5:1", aa.normal);
+	row("AA", "Large text 3:1", aa.large);
+	row("AAA", "Normal text 7:1", aaa.normal);
+	row("AAA", "Large text 4.5:1", aaa.large);
+	row("UI", "Non-text 3:1", nonTextUI);
+
+	// ── Suggestions ───────────────────────────────────────────────────
+	if (suggestionsCount > 0) {
+		y += 6;
+		fill("#27272a", P, y, W - P * 2, 1);
+		y += 12;
+
+		ctx.textAlign = "left";
+		ctx.fillStyle = "#71717a";
+		ctx.font = `600 10px ${mono}`;
+		ctx.fillText("SUGGESTED FOREGROUND (HUE PRESERVED)", P, y + 10);
+		y += 18;
+
+		const sugRow = (label: string, s: { color: string; ratio: number }) => {
+			// swatch — actual suggested color, filled in
+			fill(s.color, P, y, 16, 16);
+
+			ctx.fillStyle = "#f4f4f5";
+			ctx.font = `500 11px ${mono}`;
+			ctx.textBaseline = "middle";
+			ctx.fillText(`${label} — ${s.color} · ${s.ratio.toFixed(2)}:1`, P + 24, y + 8);
+			y += 24;
+		};
+
+		if (suggestionAA) sugRow("AA", suggestionAA);
+		if (suggestionAAA) sugRow("AAA", suggestionAAA);
+		ctx.textBaseline = "alphabetic";
+	}
+
+	// ── Footer ────────────────────────────────────────────────────────
+	fill("#27272a", P, y + 4, W - P * 2, 1);
+	ctx.fillStyle = "#52525b";
+	ctx.font = `400 10px ${mono}`;
+	ctx.textAlign = "left";
+	ctx.textBaseline = "top";
+	ctx.fillText(
+		`bicolor.harv.computer/contrast · ${mode === "gradient" ? "gradient" : "solid"}`,
+		P,
+		y + 10,
+	);
+
+	const blob = await new Promise<Blob | null>((resolve) =>
+		canvas.toBlob((b) => resolve(b), "image/png"),
+	);
+	if (!blob) throw new Error("Could not generate image");
+
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement("a");
+	a.href = url;
+	a.download = `${name}.png`;
+	a.click();
+	URL.revokeObjectURL(url);
+}
+
+
 export async function downloadColorCard(
 	hex: string,
 	values: Record<string, string | null>,
