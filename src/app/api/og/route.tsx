@@ -179,7 +179,7 @@ export async function GET(request: Request) {
             color: "#52525b",
           }}
         >
-          <span>Pick. Convert. Palette.</span>
+          <span>Pick. Convert. Contrast. Palette. Gradient. Names.</span>
           <span>bicolor.app</span>
         </div>
       </div>

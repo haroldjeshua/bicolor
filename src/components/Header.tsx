@@ -29,9 +29,9 @@ import {
 const NAV_ITEMS = [
 	{ href: "/picker", label: "picker" },
 	{ href: "/convert", label: "convert" },
-	{ href: "/contrast", label: "contrast" },
 	{ href: "/palette", label: "palette" },
 	{ href: "/gradient", label: "gradient" },
+	{ href: "/contrast", label: "contrast" },
 	{ href: "/names", label: "names" },
 	{ href: "/saved", label: "saved" },
 ] as const;
