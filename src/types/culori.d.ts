@@ -32,6 +32,8 @@ declare module "culori" {
     rgbGamut?: string
   ): Color;
 
+  export function differenceCiede2000(): (a: Color, b: Color) => number;
+
   export function toGamut(params: {
     mode: string;
     method?: string;
