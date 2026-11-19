@@ -262,6 +262,7 @@ export interface PaletteStep {
 }
 
 export type PaletteAnchor = "auto" | "centered";
+export type HarmonyMode = "complementary" | "analogous" | "triadic";
 
 export function generatePalette(
   seedColor: string,
@@ -358,4 +359,37 @@ export function generatePalette(
   }
 
   return { steps, seedStep };
+}
+
+/**
+ * Suggest an accent hex from two dominant colors and a harmony mode.
+ * The accent hue is offset from c1's hue; lightness/chroma blend c1 and c2.
+ *
+ * Modes:
+ * - complementary: c1 hue + 180°
+ * - analogous: c1 hue + 30°
+ * - triadic: c1 hue + 120°
+ */
+export function suggestAccent(
+	c1: string,
+	c2: string,
+	mode: HarmonyMode,
+): string | null {
+	const ch1 = oklchChannels(c1);
+	const ch2 = oklchChannels(c2);
+	if (!ch1 || !ch2) return null;
+
+	const offsets: Record<HarmonyMode, number> = {
+		complementary: 180,
+		analogous: 30,
+		triadic: 120,
+	};
+
+	const offset = offsets[mode];
+	const hue = Math.round(((ch1.h ?? 0) + offset) % 360);
+	const l = (ch1.l + ch2.l) / 2;
+	const c = Math.max(ch1.c, ch2.c);
+
+	const color: Color = { mode: "oklch", l, c, h: hue, alpha: 1 };
+	return serialize(color, "hex") ?? null;
 }
