@@ -9,8 +9,8 @@ import {
 } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import ColorSwatch from "@/components/ColorSwatch";
 import ColorInput from "@/components/ColorInput";
+import ColorSwatch from "@/components/ColorSwatch";
 import { useActionBar } from "@/components/ActionBar";
 import { Button } from "@/components/ui/button";
 import SegmentedControl from "@/components/names/SegmentedControl";
@@ -24,6 +24,7 @@ import {
 import { type ColorModel } from "@/lib/constants";
 import {
 	ArrowRightIcon,
+	CheckIcon,
 	CopyIcon,
 	LinkSimpleIcon,
 	ShuffleIcon,
@@ -33,48 +34,38 @@ import { sileo } from "sileo";
 const DEFAULT_C1 = "#6366f1";
 const DEFAULT_C2 = "#f59e0b";
 
-function textColorOn(hex: string): "black" | "white" {
+function inkOn(hex: string): "black" | "white" {
 	const channels = oklchChannels(hex);
 	const l = channels?.l ?? 0.5;
 	return l > 0.55 ? "black" : "white";
 }
 
-function SwatchLabel({
-	color,
-}: {
-	color: string;
-}) {
-	const label = useMemo(() => findClosestNamedColor(color), [color]);
-	const ink = textColorOn(color);
+function SectionLabel({ children }: { children: React.ReactNode }) {
 	return (
-		<div className="flex flex-col items-center gap-2">
-			<div
-				className="relative flex items-center justify-center h-40 w-48 rounded-xl border border-border/60 shadow-sm"
-				style={{ background: color }}
-			>
-				{label ? (
-					<span
-						className={`font-mono text-[11px] font-bold tracking-tight ${
-							ink === "black" ? "text-black" : "text-white"
-						}`}
-					>
-						{label.name}
-					</span>
-				) : null}
-			</div>
-			<div className="flex flex-col items-center gap-1">
-				<span className="font-mono text-[11px] text-foreground truncate w-40">
-					{color}
-				</span>
-				{label ? (
-					<span
-						className="font-mono text-[9px] text-muted-foreground/60 truncate w-40 uppercase tracking-wider"
-						title={label.name}
-					>
-						{label.name}
-					</span>
-				) : null}
-			</div>
+		<span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+			{children}
+		</span>
+	);
+}
+
+/** 60-30-10 strip: one dominant flex track with the three stops at 60/30/10. */
+function Scale60_30_10({
+	c1,
+	c2,
+	accent,
+}: {
+	c1: string;
+	c2: string;
+	accent: string | null;
+}) {
+	return (
+		<div
+			className="flex h-8 w-44 overflow-hidden rounded-sm border border-white/10"
+			aria-hidden
+		>
+			<div style={{ width: "60%", background: c1 }} />
+			<div style={{ width: "30%", background: c2 }} />
+			<div style={{ width: "10%", background: accent ?? "#ffffff" }} />
 		</div>
 	);
 }
@@ -87,23 +78,22 @@ function CombosPageContent() {
 
 	const [c1Hex, setC1Hex] = useState(() => searchParams.get("c1") ?? DEFAULT_C1);
 	const [c2Hex, setC2Hex] = useState(() => searchParams.get("c2") ?? DEFAULT_C2);
+	const [accentHex, setAccentHex] = useState<string | null>(null);
+	const [accentManual, setAccentManual] = useState(false);
 	const [c1Model, setC1Model] = useState<ColorModel>("hex");
 	const [c2Model, setC2Model] = useState<ColorModel>("hex");
-	const [accentHex, setAccentHex] = useState<string | null>(null);
 	const [accentModel, setAccentModel] = useState<ColorModel>("hex");
 	const [mode, setMode] = useState<HarmonyMode>(() => {
 		const m = searchParams.get("mode");
 		return m === "analogous" || m === "triadic" ? m : "complementary";
 	});
-	const [accentManual, setAccentManual] = useState(false);
+	const [copied, setCopied] = useState<string | null>(null);
 
-	// Accent: auto-suggested from c1/c2/mode unless user typed it.
 	const accent = useMemo(
 		() => (accentManual ? accentHex : suggestAccent(c1Hex, c2Hex, mode)),
 		[c1Hex, c2Hex, mode, accentHex, accentManual],
 	);
 
-	// Display values in each input's current model.
 	const c1Value = useMemo(
 		() => convert(c1Hex, "hex", c1Model) ?? c1Hex,
 		[c1Hex, c1Model],
@@ -212,11 +202,22 @@ function CombosPageContent() {
 		setAccentManual(false);
 	}, []);
 
+	const copyText = useCallback(async (text: string, key: string) => {
+		try {
+			await navigator.clipboard.writeText(text);
+			setCopied(key);
+			window.setTimeout(() => setCopied(null), 1400);
+		} catch {}
+	}, []);
+
 	const handleCopyAll = useCallback(async () => {
-		const lines = [`# Combo colors`];
-		if (c1Hex) lines.push(`c1: ${c1Hex}`);
-		if (c2Hex) lines.push(`c2: ${c2Hex}`);
-		if (accent) lines.push(`accent: ${accent}`);
+		const lines = [
+			"bicolor — combos",
+			`c1: ${c1Hex}`,
+			`c2: ${c2Hex}`,
+			`accent: ${accent ?? "—"}`,
+			`mode: ${mode}`,
+		];
 		try {
 			await navigator.clipboard.writeText(lines.join("\n"));
 			sileo.success({
@@ -224,9 +225,9 @@ function CombosPageContent() {
 				icon: <CopyIcon size={16} />,
 			});
 		} catch {}
-	}, [c1Hex, c2Hex, accent]);
+	}, [c1Hex, c2Hex, accent, mode]);
 
-	// Label lookups via /names engine
+	// Named-color lookups via /names engine
 	const label1 = useMemo(() => findClosestNamedColor(c1Hex), [c1Hex]);
 	const label2 = useMemo(() => findClosestNamedColor(c2Hex), [c2Hex]);
 	const labelAccent = useMemo(
@@ -234,7 +235,10 @@ function CombosPageContent() {
 		[accent],
 	);
 
-	// ActionBar: Swap · Copy all · Share
+	const c1Ink = inkOn(c1Hex);
+	const c2Ink = inkOn(c2Hex);
+	const accentInk = accent ? inkOn(accent) : "black";
+
 	useEffect(() => {
 		setContent(
 			<div className="flex items-center gap-3">
@@ -242,7 +246,7 @@ function CombosPageContent() {
 					type="button"
 					onClick={handleSwap}
 					aria-label="Swap dominant colors"
-					className="h-8 px-2 font-mono text-xs"
+					className="h-8 px-2 font-mono text-xs active:scale-[0.96] transition-transform duration-150"
 				>
 					<ArrowRightIcon size={12} className="rotate-180" />
 					<ArrowRightIcon size={12} />
@@ -251,7 +255,7 @@ function CombosPageContent() {
 					type="button"
 					onClick={handleCopyAll}
 					aria-label="Copy all colors"
-					className="h-8 px-2 font-mono text-xs"
+					className="h-8 px-2 font-mono text-xs active:scale-[0.96] transition-transform duration-150"
 				>
 					<CopyIcon size={12} />
 				</Button>
@@ -263,7 +267,7 @@ function CombosPageContent() {
 				>
 					<Button
 						type="button"
-						className="h-8 px-2 font-mono text-xs"
+						className="h-8 px-2 font-mono text-xs active:scale-[0.96] transition-transform duration-150"
 					>
 						<LinkSimpleIcon size={12} />
 					</Button>
@@ -273,220 +277,307 @@ function CombosPageContent() {
 	}, [c1Hex, c2Hex, accent, mode, pathname, setContent, handleSwap, handleCopyAll]);
 
 	return (
-		<section className="min-h-[calc(100dvh-48px)] h-full w-full max-w-7xl m-auto flex flex-col px-4 pt-20 pb-32 gap-6 items-center justify-start">
-			<div className="w-full max-w-4xl flex flex-col gap-6">
-				{/* Big swatches: hero */}
-				<div className="flex items-start justify-center gap-6 w-full">
-					<SwatchLabel color={c1Hex} />
-					<SwatchLabel color={c2Hex} />
-					<SwatchLabel color={accent ?? "#ffffff"} />
-				</div>
+		<section className="flex h-[calc(100dvh-48px)] w-full flex-col overflow-hidden pb-14 lg:flex-row">
+			{/* ── Stage: device-frame mock interface ───────────────────── */}
+			<div
+				role="img"
+				aria-label={`Combos preview: ${c1Hex} background, ${c2Hex} secondary, ${accent ?? "no"} accent`}
+				className="relative flex h-80 w-full min-w-0 flex-col items-center justify-center overflow-hidden bg-zinc-950 px-4 pb-6 pt-10 sm:h-96 sm:pb-10 lg:h-full"
+			>
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-0 opacity-60"
+					style={{
+						backgroundImage:
+							"radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)",
+						backgroundSize: "22px 22px",
+					}}
+				/>
 
-				<h1 className="font-mono text-2xl tracking-tight">combos</h1>
-				<p className="max-w-2xl font-mono text-[10px] leading-relaxed text-muted-foreground/60">
-					Build a two-color scheme with an accent. Pick your dominants,
-					choose a harmony, and preview the trio on a sample interface.
-				</p>
-
-				{/* Harmony mode selector */}
-				<div className="flex items-center gap-3">
-					<span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">
-						Harmony
-					</span>
-					<SegmentedControl<HarmonyMode>
-						label="Harmony mode"
-						value={mode}
-						onValueChange={setMode}
-						options={[
-							{ value: "complementary", label: "Complementary" },
-							{ value: "analogous", label: "Analogous" },
-							{ value: "triadic", label: "Triadic" },
-						]}
-					/>
-				</div>
-
-				{/* Color inputs — functional model selectors */}
-				<div className="mt-4 flex flex-col gap-3 w-full">
-					<div className="flex items-center gap-3 w-full">
-						<ColorInput
-							value={c1Value}
-							model={c1Model}
-							onValueChange={handleC1Change}
-							onModelChange={handleC1ModelChange}
-							inputAriaLabel="Dominant color value"
-						/>
-						<ColorInput
-							value={c2Value}
-							model={c2Model}
-							onValueChange={handleC2Change}
-							onModelChange={handleC2ModelChange}
-							inputAriaLabel="Secondary color value"
-						/>
+				{/* Device frame — the combo shown as a product */}
+				<div className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl shadow-black/60">
+					{/* App chrome: secondary color strip */}
+					<div
+						className="flex items-center justify-between border-b border-black/20 px-4 py-2"
+						style={{ background: c2Hex }}
+					>
+						<div className="flex gap-1.5">
+							<div className="h-2.5 w-2.5 rounded-full bg-black/25" />
+							<div className="h-2.5 w-2.5 rounded-full bg-black/25" />
+						</div>
+						<span
+							className={`font-mono text-[8px] font-semibold uppercase tracking-[0.2em] ${
+								c2Ink === "black" ? "text-black" : "text-white"
+							}`}
+						>
+							bicolor / tokens
+						</span>
 					</div>
-					<div className="flex items-center gap-3 w-full">
-						<ColorInput
-							value={accentValue ?? ""}
-							model={accentModel}
-							onValueChange={handleAccentChange}
-							onModelChange={handleAccentModelChange}
-							inputAriaLabel="Accent color value"
-							placeholder={accent ?? "Suggested accent"}
-						/>
-						<div className="flex items-center gap-1.5 ml-auto">
+
+					{/* App body: dominant canvas */}
+					<div className="px-5 py-6" style={{ background: c1Hex }}>
+						<h2
+							className={`font-mono text-xl leading-snug tracking-tight ${
+								c1Ink === "black" ? "text-black" : "text-white"
+							}`}
+						>
+							Editorial scale, read whole.
+						</h2>
+						<p
+							className={`mt-1 max-w-[36ch] font-mono text-[8px] uppercase tracking-widest ${
+								c1Ink === "black" ? "text-black/60" : "text-white/70"
+							}`}
+						>
+							Two surfaces, three tokens, one accent
+						</p>
+
+						{/* Token readout */}
+						<div
+							className={`mt-4 flex flex-col gap-1.5 font-mono text-[8px] uppercase tracking-widest ${
+								c1Ink === "black" ? "text-black/80" : "text-white/80"
+							}`}
+						>
+							<div className="flex items-center justify-between gap-4">
+								<span>--color-primary</span>
+								<span className="tabular-nums">{c1Hex}</span>
+							</div>
+							<div className="flex items-center justify-between gap-4">
+								<span>--color-surface</span>
+								<span className="tabular-nums">{c2Hex}</span>
+							</div>
+							<div className="flex items-center justify-between gap-4">
+								<span>--color-accent</span>
+								<span className="tabular-nums">{accent ?? "—"}</span>
+							</div>
+						</div>
+
+						{/* Accent CTA */}
+						<button
+							type="button"
+							aria-label="Save scheme"
+							className="mt-5 inline-flex cursor-pointer items-center gap-1.5 rounded-sm px-4 py-2 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] shadow-sm transition-transform duration-150 active:scale-[0.97]"
+							style={{
+								background: accent ?? "#ffffff",
+								color: accentInk === "black" ? "#0a0a0a" : "#ffffff",
+							}}
+						>
+							Save scheme
+							<ArrowRightIcon size={10} aria-hidden weight="bold" />
+						</button>
+					</div>
+				</div>
+
+				{/* Hex chips — the trio at a glance */}
+				<div className="relative z-10 mt-5 flex max-w-md flex-wrap justify-center gap-2">
+					{[
+						{ key: "c1", value: c1Hex, label: label1?.name },
+						{ key: "c2", value: c2Hex, label: label2?.name },
+						{
+							key: "accent",
+							value: accent ?? "#ffffff",
+							label: labelAccent?.name,
+						},
+					].map((chip) => (
+						<button
+							key={chip.key}
+							type="button"
+							onClick={() => copyText(chip.value, chip.key)}
+							aria-label={`Copy ${chip.value}`}
+							className="flex cursor-pointer flex-col items-start gap-0.5 rounded-md border px-2.5 py-1.5 transition-transform duration-150 active:scale-[0.97]"
+							style={{
+								borderColor: `${chip.value}66`,
+								background: `${chip.value}14`,
+							}}
+						>
+							<span className="flex items-center gap-1 font-mono text-[9px] font-bold tabular-nums"
+								style={{ color: chip.value }}
+							>
+								#{chip.value.replace("#", "").toUpperCase()}
+								{copied === chip.key ? (
+									<CheckIcon size={9} aria-hidden />
+								) : null}
+							</span>
+							<span className="font-mono text-[8px] uppercase text-zinc-500">
+								{chip.label ?? "—"}
+							</span>
+						</button>
+					))}
+				</div>
+
+				{/* 60-30-10 readout */}
+				<div className="relative z-10 mt-4 flex items-center gap-3">
+					<Scale60_30_10 c1={c1Hex} c2={c2Hex} accent={accent} />
+					<span className="font-mono text-[10px] tabular-nums text-zinc-400">
+						60 / 30 / 10
+					</span>
+				</div>
+			</div>
+
+			{/* ── Controls ───────────────────────────────────────────── */}
+			<aside
+				aria-label="Combos controls"
+				className="flex min-h-0 w-full flex-1 flex-col border-t border-border/60 bg-background lg:h-full lg:w-[330px] lg:flex-none lg:border-l lg:border-t-0 xl:w-[340px]"
+			>
+				<div className="min-h-0 flex-1 overflow-y-auto">
+					{/* Header */}
+					<div className="border-b border-border/60 px-4 py-4">
+						<h1 className="font-mono text-2xl tracking-tight">combos</h1>
+						<p className="mt-1 max-w-[32ch] font-mono text-[10px] leading-relaxed text-muted-foreground/60">
+							Two dominants, one accent. Pick the harmony, keep the pair,
+							steal the scheme.
+						</p>
+					</div>
+
+					{/* Harmony */}
+					<div className="border-b border-border/60 px-4 py-4">
+						<SectionLabel>Harmony</SectionLabel>
+						<div className="mt-2">
+							<SegmentedControl<HarmonyMode>
+								label="Harmony"
+								value={mode}
+								onValueChange={setMode}
+								options={[
+									{ value: "complementary", label: "Complementary" },
+									{ value: "analogous", label: "Analogous" },
+									{ value: "triadic", label: "Triadic" },
+								]}
+							/>
+						</div>
+					</div>
+
+					{/* Dominants */}
+					<div className="border-b border-border/60 px-4 py-4">
+						<SectionLabel>Dominants</SectionLabel>
+						<div className="mt-2 flex flex-col gap-2">
+							<div className="flex items-center gap-2">
+								<ColorSwatch
+									color={c1Hex}
+									size="sm"
+									className="shrink-0 border border-border/60"
+									aria-label={`Color 1 ${c1Hex}`}
+								/>
+								<ColorInput
+									value={c1Value}
+									model={c1Model}
+									onValueChange={handleC1Change}
+									onModelChange={handleC1ModelChange}
+									inputAriaLabel="Dominant color value"
+								/>
+							</div>
+							<div className="flex items-center gap-2">
+								<ColorSwatch
+									color={c2Hex}
+									size="sm"
+									className="shrink-0 border border-border/60"
+									aria-label={`Color 2 ${c2Hex}`}
+								/>
+								<ColorInput
+									value={c2Value}
+									model={c2Model}
+									onValueChange={handleC2Change}
+									onModelChange={handleC2ModelChange}
+									inputAriaLabel="Secondary color value"
+								/>
+							</div>
+						</div>
+					</div>
+
+					{/* Accent */}
+					<div className="border-b border-border/60 px-4 py-4">
+						<div className="flex items-center justify-between gap-2">
+							<SectionLabel>Accent</SectionLabel>
 							<Button
 								type="button"
 								onClick={handleShuffle}
-								aria-label="Shuffle dominant colors"
-								className="h-9 px-2 font-mono text-xs cursor-pointer"
+								aria-label="Shuffle palette"
+								className="h-7 gap-1.5 px-2 font-mono text-[9px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
 							>
-								<ShuffleIcon size={12} aria-hidden="true" />
+								<ShuffleIcon size={10} aria-hidden="true" />
+								Shuffle
 							</Button>
+						</div>
+						<div className="mt-2 flex items-center gap-2">
+							<ColorSwatch
+								color={accent ?? "#ffffff"}
+								size="sm"
+								className="shrink-0 border border-border/60"
+								aria-label={`Accent ${accent ?? "unset"}`}
+							/>
+							<ColorInput
+								value={accentValue}
+								model={accentModel}
+								onValueChange={handleAccentChange}
+								onModelChange={handleAccentModelChange}
+								inputAriaLabel="Accent color value"
+								placeholder="Suggested accent"
+							/>
+						</div>
+						<p className="mt-2 font-mono text-[9px] leading-relaxed text-muted-foreground/50">
+							Derived from the first dominant via the selected harmony. Type
+							over it to take manual control.
+						</p>
+					</div>
+
+					{/* Named swatches */}
+					<div className="border-b border-border/60 px-4 py-4">
+						<SectionLabel>Nearest names</SectionLabel>
+						<div className="mt-2 flex flex-col">
+							{[
+								{ role: "Dominant", hex: c1Hex, label: label1 },
+								{ role: "Secondary", hex: c2Hex, label: label2 },
+								{ role: "Accent", hex: accent ?? "", label: labelAccent },
+							].map((row) => (
+								<div
+									key={row.role}
+									className="flex items-center gap-3 border-b border-border/40 py-2 last:border-b-0"
+								>
+									<ColorSwatch
+										color={row.hex}
+										size="sm"
+										className="shrink-0 border border-border/60"
+										aria-label={`${row.role} swatch`}
+									/>
+									<div className="min-w-0 flex-1">
+										<p className="font-mono text-[10px] leading-none text-foreground">
+											{row.label?.name ?? "—"}
+										</p>
+										<p className="mt-1 truncate font-mono text-[9px] leading-none text-muted-foreground/60">
+											{row.hex}
+										</p>
+									</div>
+									<button
+										type="button"
+										onClick={() => copyText(row.hex, row.role)}
+										aria-label={`Copy ${row.hex}`}
+										className="shrink-0 cursor-pointer p-1 text-muted-foreground/50 outline-none transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring"
+									>
+										{copied === row.role ? (
+											<CheckIcon size={12} aria-hidden />
+										) : (
+											<CopyIcon size={12} aria-hidden />
+										)}
+									</button>
+								</div>
+							))}
+						</div>
+					</div>
+
+					{/* Actions */}
+					<div className="px-4 py-4">
+						<SectionLabel>Actions</SectionLabel>
+						<div className="mt-2 flex flex-wrap gap-2">
 							<Button
 								type="button"
 								onClick={handleReset}
-								aria-label="Reset to defaults"
-								className="h-9 font-mono text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+								variant="secondary"
+								className="h-8 font-mono text-[10px] uppercase tracking-wider active:scale-[0.96] transition-transform duration-150"
 							>
 								Reset
 							</Button>
 						</div>
 					</div>
 				</div>
-
-				{/* Sample interface: 60-30-10 applied to a mock UI */}
-				<div className="mt-6 flex flex-col gap-3">
-					<p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/50">
-						Sample interface · 60-30-10
-					</p>
-					<div className="relative flex w-full max-w-2xl flex-col items-start rounded-xl border border-border bg-background p-6 shadow-lg">
-						{/* Main background: c1 (60%) */}
-						<div
-							className="absolute inset-0 rounded-xl"
-							style={{ background: c1Hex }}
-						/>
-						{/* Header band: c2 (30%) */}
-						<div
-							className="absolute top-0 left-0 right-0 h-16 rounded-t-xl"
-							style={{ background: c2Hex }}
-						/>
-						{/* Content overlay */}
-						<div className="relative z-10 flex flex-col gap-3 p-6">
-							<div className="flex items-center gap-2">
-								<div className="h-3 w-12 rounded-sm" style={{ background: c2Hex }} />
-								<span
-									className={`font-mono text-[10px] font-bold tracking-tight ${
-										textColorOn(c1Hex) === "black"
-											? "text-black"
-											: "text-white"
-									}`}
-								>
-									Sample UI
-								</span>
-							</div>
-							<h2
-								className={`font-mono text-3xl tracking-tight leading-tight ${
-									textColorOn(c1Hex) === "black"
-										? "text-black"
-										: "text-white"
-								}`}
-							>
-							Edit at the Speed of Thought.
-							</h2>
-							<p
-								className={`font-mono text-[9px] leading-relaxed ${
-									textColorOn(c1Hex) === "black"
-										? "text-black/70"
-										: "text-white/80"
-								} max-w-[30ch]`}
-							>
-								Generate a color scheme from two dominants and see how it
-								lives on a real interface.
-							</p>
-							<div className="mt-6 flex items-center gap-3">
-								<button
-									type="button"
-									aria-label="Primary action"
-									className={`flex items-center justify-center gap-2 px-5 py-2 rounded-sm font-mono text-[10px] font-bold uppercase tracking-wider shadow-sm ${
-										textColorOn(accent ?? "#000000") === "black"
-											? "text-black"
-											: "text-white"
-									}`}
-									style={{ background: accent ?? "#000000" }}
-								>
-									Get started
-									<ArrowRightIcon size={10} aria-hidden="true" />
-								</button>
-								<button
-									type="button"
-									aria-label="Secondary action"
-									className={`flex items-center justify-center gap-2 px-5 py-2 rounded-sm font-mono text-[10px] font-bold uppercase tracking-wider border border-current ${
-										textColorOn(c1Hex) === "black"
-											? "text-black"
-											: "text-white"
-									}`}
-								>
-									Learn more
-								</button>
-							</div>
-						</div>
-						{/* Proportion caption */}
-						<div className="absolute bottom-2 left-2 right-2 flex justify-between px-2">
-							<span className="font-mono text-[9px] text-muted-foreground/50">
-								{c1Hex} · 60%
-							</span>
-							<span className="font-mono text-[9px] text-muted-foreground/50">
-								{c2Hex} · 30%
-							</span>
-							<span className="font-mono text-[9px] text-muted-foreground/50">
-								{accent ?? "—"} · 10%
-							</span>
-						</div>
-					</div>
-				</div>
-
-				{/* Labeled swatches: names */}
-				<div className="mt-4 flex w-full justify-center gap-6">
-					{[
-						{ key: "c1", color: c1Hex, label: label1, role: "Dominant" },
-						{ key: "c2", color: c2Hex, label: label2, role: "Secondary" },
-						{
-							key: "accent",
-							color: accent ?? "",
-							label: labelAccent,
-							role: "Accent",
-						},
-					].map((swatch) => (
-						<Link
-							key={swatch.key}
-							href={`/names?color=${encodeURIComponent(swatch.color)}`}
-							aria-label={`Open ${swatch.color} in names`}
-							className="flex flex-col items-center gap-2"
-						>
-							<ColorSwatch
-								color={swatch.color}
-								size="md"
-								aria-label={`${swatch.role} color ${swatch.color}`}
-							/>
-							<div className="flex flex-col items-center gap-0.5">
-								<span
-									className="font-mono text-[10px] text-foreground truncate w-24"
-									title={swatch.color}
-								>
-									{swatch.color}
-								</span>
-								{swatch.label ? (
-									<span
-										className="font-mono text-[8px] text-muted-foreground/60 truncate w-24 uppercase tracking-wider"
-										title={`${swatch.label.name} (${swatch.label.hex})`}
-									>
-										{swatch.label.name}
-									</span>
-								) : null}
-							</div>
-						</Link>
-					))}
-				</div>
-			</div>
+			</aside>
 		</section>
 	);
 }
