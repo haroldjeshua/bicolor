@@ -6,9 +6,11 @@ import {
 	useEffect,
 	useMemo,
 	Suspense,
+	useRef,
 } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import { HexAlphaColorPicker } from "react-colorful";
 import ColorInput from "@/components/ColorInput";
 import ColorSwatch from "@/components/ColorSwatch";
 import { useActionBar } from "@/components/ActionBar";
@@ -23,6 +25,7 @@ import {
 } from "@/lib/color";
 import { type ColorModel } from "@/lib/constants";
 import {
+	ArrowCounterClockwiseIcon,
 	ArrowRightIcon,
 	ArrowsLeftRightIcon,
 	CheckIcon,
@@ -30,6 +33,8 @@ import {
 	CopySimpleIcon,
 	LinkSimpleIcon,
 	ShuffleIcon,
+	SlidersHorizontalIcon,
+	XIcon,
 } from "@phosphor-icons/react";
 import { sileo } from "sileo";
 
@@ -47,6 +52,66 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 		<span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
 			{children}
 		</span>
+	);
+}
+
+/** Clickable swatch that opens a picker popover. */
+function SwatchPicker({
+	color,
+	onPick,
+	label,
+}: {
+	color: string;
+	onPick: (hex: string) => void;
+	label: string;
+}) {
+	const [open, setOpen] = useState(false);
+	const ref = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (!open) return;
+		const onMouseDown = (e: MouseEvent) => {
+			if (ref.current && !ref.current.contains(e.target as Node)) {
+				setOpen(false);
+			}
+		};
+		const onKeyDown = (e: globalThis.KeyboardEvent) => {
+			if (e.key === "Escape") setOpen(false);
+		};
+		document.addEventListener("mousedown", onMouseDown);
+		document.addEventListener("keydown", onKeyDown);
+		return () => {
+			document.removeEventListener("mousedown", onMouseDown);
+			document.removeEventListener("keydown", onKeyDown);
+		};
+	}, [open]);
+
+	return (
+		<div ref={ref} className="relative shrink-0">
+			<button
+				type="button"
+				onClick={() => setOpen((o) => !o)}
+				aria-label={label}
+				aria-expanded={open}
+				className="cursor-pointer rounded-md outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-ring"
+			>
+				<ColorSwatch
+					color={color}
+					size="sm"
+					className="border border-border/60"
+					aria-label={`${label}: ${color}`}
+				/>
+			</button>
+			{open && (
+				<div className="absolute left-0 top-full z-50 mt-2 rounded-xl border border-border bg-background p-1.5 shadow-lg">
+					<HexAlphaColorPicker
+						color={color}
+						onChange={onPick}
+						className="rounded-lg"
+					/>
+				</div>
+			)}
+		</div>
 	);
 }
 
@@ -80,8 +145,12 @@ function CombosPageContent() {
 
 	const [c1Hex, setC1Hex] = useState(() => searchParams.get("c1") ?? DEFAULT_C1);
 	const [c2Hex, setC2Hex] = useState(() => searchParams.get("c2") ?? DEFAULT_C2);
-	const [accentHex, setAccentHex] = useState<string | null>(null);
-	const [accentManual, setAccentManual] = useState(false);
+	const [accentHex, setAccentHex] = useState<string | null>(
+		() => searchParams.get("accent"),
+	);
+	const [accentManual, setAccentManual] = useState(
+		() => searchParams.get("accent") !== null,
+	);
 	const [c1Model, setC1Model] = useState<ColorModel>("hex");
 	const [c2Model, setC2Model] = useState<ColorModel>("hex");
 	const [accentModel, setAccentModel] = useState<ColorModel>("hex");
@@ -90,11 +159,61 @@ function CombosPageContent() {
 		return m === "analogous" || m === "triadic" ? m : "complementary";
 	});
 	const [copied, setCopied] = useState<string | null>(null);
+	const [controlsOpen, setControlsOpen] = useState(false);
+	const controlsTriggerRef = useRef<HTMLButtonElement>(null);
+	const controlsCloseRef = useRef<HTMLButtonElement>(null);
+
+	useEffect(() => {
+		if (!controlsOpen) return;
+
+		// Escape dismisses the mobile controls drawer; focus is restored on close.
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape") setControlsOpen(false);
+		};
+
+		document.addEventListener("keydown", onKeyDown);
+		controlsCloseRef.current?.focus();
+
+		const trigger = controlsTriggerRef.current;
+
+		return () => {
+			document.removeEventListener("keydown", onKeyDown);
+			trigger?.focus();
+		};
+	}, [controlsOpen]);
 
 	const accent = useMemo(
 		() => (accentManual ? accentHex : suggestAccent(c1Hex, c2Hex, mode)),
 		[c1Hex, c2Hex, mode, accentHex, accentManual],
 	);
+
+	// Snapshot the currently-visible accent and switch to manual mode.
+	// Any manual edit to any of the three colors deselects the harmony.
+	const frozenAccentSave = useCallback(() => {
+		setAccentHex(accent ?? "#000000");
+		setAccentManual(true);
+	}, [accent]);
+
+	const pickC1 = useCallback(
+		(hex: string) => {
+			frozenAccentSave();
+			setC1Hex(hex);
+		},
+		[frozenAccentSave],
+	);
+
+	const pickC2 = useCallback(
+		(hex: string) => {
+			frozenAccentSave();
+			setC2Hex(hex);
+		},
+		[frozenAccentSave],
+	);
+
+	const pickAccent = useCallback((hex: string) => {
+		setAccentHex(hex);
+		setAccentManual(true);
+	}, []);
 
 	const c1Value = useMemo(
 		() => convert(c1Hex, "hex", c1Model) ?? c1Hex,
@@ -126,22 +245,22 @@ function CombosPageContent() {
 		(value: string) => {
 			const parsed = convert(value, c1Model, "hex");
 			if (parsed) {
+				frozenAccentSave();
 				setC1Hex(parsed);
-				setAccentManual(false);
 			}
 		},
-		[c1Model],
+		[c1Model, frozenAccentSave],
 	);
 
 	const handleC2Change = useCallback(
 		(value: string) => {
 			const parsed = convert(value, c2Model, "hex");
 			if (parsed) {
+				frozenAccentSave();
 				setC2Hex(parsed);
-				setAccentManual(false);
 			}
 		},
-		[c2Model],
+		[c2Model, frozenAccentSave],
 	);
 
 	const handleAccentChange = useCallback(
@@ -214,10 +333,10 @@ function CombosPageContent() {
 
 	const handleCopyAll = useCallback(async () => {
 		const lines = [
-			"bicolor — combos",
+			"bicolor â€” combos",
 			`c1: ${c1Hex}`,
 			`c2: ${c2Hex}`,
-			`accent: ${accent ?? "—"}`,
+			`accent: ${accent ?? "â€”"}`,
 			`mode: ${mode}`,
 		];
 		try {
@@ -257,6 +376,16 @@ function CombosPageContent() {
 				<Button
 					variant="bare"
 					size="sm"
+					onClick={handleReset}
+					className="text-background/60 hover:text-muted"
+					aria-label="Reset combo"
+				>
+					<ArrowCounterClockwiseIcon size={14} />
+					<span className="hidden md:inline">Reset</span>
+				</Button>
+				<Button
+					variant="bare"
+					size="sm"
 					onClick={handleSwap}
 					className="text-background/60 hover:text-muted"
 					aria-label="Swap dominant colors"
@@ -291,15 +420,15 @@ function CombosPageContent() {
 				</Link>
 			</>
 		);
-	}, [c1Hex, c2Hex, accent, mode, pathname, setContent, handleSwap, handleShuffle, handleCopyAll]);
+	}, [c1Hex, c2Hex, accent, mode, pathname, setContent, handleSwap, handleShuffle, handleCopyAll, handleReset]);
 
 	return (
 		<section className="flex h-[calc(100dvh-48px)] w-full flex-col overflow-hidden pb-14 lg:flex-row">
-			{/* ── Stage: device-frame mock interface ───────────────────── */}
+			{/* â”€â”€ Stage: device-frame mock interface â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
 			<div
 				role="img"
 				aria-label={`Combos preview: ${c1Hex} background, ${c2Hex} sidebar, ${accent ?? "no"} accent`}
-				className="relative flex h-96 w-full min-w-0 flex-col items-center justify-center overflow-hidden bg-background px-4 pb-8 pt-8 sm:h-[30rem] lg:h-full"
+				className="relative flex h-full w-full min-w-0 flex-col items-center justify-center overflow-hidden bg-background px-4 pb-8 pt-8 lg:h-full"
 			>
 				<div
 					aria-hidden="true"
@@ -321,7 +450,7 @@ function CombosPageContent() {
 							<span className="size-[11px] rounded-full bg-[#28c840]" />
 						</div>
 						<span className="absolute left-1/2 -translate-x-1/2 font-mono text-[10px] font-medium text-foreground/80">
-							Tokens — bicolor
+							Tokens â€” bicolor
 						</span>
 						<div className="ml-auto flex items-center rounded border border-border/70 bg-muted/50 px-1.5 py-0.5 font-mono text-[8px] text-muted-foreground">
 							v0.1.0
@@ -420,7 +549,7 @@ function CombosPageContent() {
 							</div>
 
 							<p className={`font-mono text-[7px] uppercase tracking-[0.18em] ${c1Ink === "black" ? "text-black/50" : "text-white/50"}`}>
-								Derived via {mode} · oklch
+								Derived via {accentManual ? "custom" : mode} Â· oklch
 							</p>
 
 							<button
@@ -439,7 +568,7 @@ function CombosPageContent() {
 					</div>
 				</div>
 
-				{/* Hex chips — the trio at a glance */}
+				{/* Hex chips â€” the trio at a glance */}
 				<div className="relative z-10 mt-5 flex max-w-lg flex-wrap justify-center gap-2">
 					{[
 						{ key: "c1", value: c1Hex, label: label1?.name },
@@ -470,7 +599,7 @@ function CombosPageContent() {
 								) : null}
 							</span>
 							<span className="font-mono text-[8px] uppercase text-muted-foreground/70">
-								{chip.label ?? "—"}
+								{chip.label ?? "â€”"}
 							</span>
 						</button>
 					))}
@@ -485,12 +614,46 @@ function CombosPageContent() {
 				</div>
 			</div>
 
-			{/* ── Controls ───────────────────────────────────────────── */}
+			{/* â”€â”€ Controls â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+			{/* Mobile trigger — opens the controls drawer on the right */}
+			<button
+				ref={controlsTriggerRef}
+				type="button"
+				onClick={() => setControlsOpen((v) => !v)}
+				className="fixed bottom-20 right-4 z-30 flex size-12 cursor-pointer items-center justify-center border border-border bg-background text-foreground shadow-lg transition-transform active:scale-[0.96] lg:hidden"
+				aria-label="Toggle combos controls"
+				aria-expanded={controlsOpen}
+			>
+				<SlidersHorizontalIcon size={18} aria-hidden />
+			</button>
+
+			{controlsOpen && (
+				<div
+					className="fixed inset-0 z-30 bg-black/20 lg:hidden"
+					onPointerDown={() => setControlsOpen(false)}
+					aria-hidden
+				/>
+			)}
+
+			{/* Controls — drawer on mobile, side panel on desktop */}
 			<aside
 				aria-label="Combos controls"
-				className="flex min-h-0 w-full flex-1 flex-col border-t border-border/60 bg-background lg:h-full lg:w-[330px] lg:flex-none lg:border-l lg:border-t-0 xl:w-[340px]"
+				className={[
+					"fixed inset-y-0 right-0 z-40 flex h-full w-[82vw] max-w-[380px] flex-col overflow-y-auto border-l border-border/60 bg-background shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]",
+					controlsOpen ? "translate-x-0" : "translate-x-full",
+					"lg:static lg:z-auto lg:h-full lg:w-[370px] lg:flex-none lg:translate-x-0 lg:border-l lg:border-t-0 lg:shadow-none lg:transition-none xl:w-[380px]",
+				].join(" ")}
 			>
-				<div className="min-h-0 flex-1 overflow-y-auto">
+				<button
+					ref={controlsCloseRef}
+					type="button"
+					onClick={() => setControlsOpen(false)}
+					className="ml-auto flex size-8 shrink-0 cursor-pointer items-center justify-center text-muted-foreground transition-colors hover:text-foreground lg:hidden"
+					aria-label="Close combos controls"
+				>
+					<XIcon size={18} aria-hidden />
+				</button>
+				<div className="flex flex-col pb-24 lg:pb-0">
 					{/* Header */}
 					<div className="border-b border-border/60 px-4 py-4">
 						<h1 className="font-mono text-2xl tracking-tight">combos</h1>
@@ -503,15 +666,20 @@ function CombosPageContent() {
 					{/* Harmony */}
 					<div className="border-b border-border/60 px-4 py-4">
 						<SectionLabel>Harmony</SectionLabel>
-						<div className="mt-2">
-							<SegmentedControl<HarmonyMode>
+						<div className="mt-2 max-w-full overflow-x-auto pb-0.5">
+							<SegmentedControl<"custom" | HarmonyMode>
 								label="Harmony"
-								value={mode}
-								onValueChange={setMode}
+								value={accentManual ? "custom" : mode}
+								onValueChange={(value) => {
+									if (value === "custom") return;
+									setMode(value);
+									setAccentManual(false);
+								}}
 								options={[
 									{ value: "complementary", label: "Complementary" },
 									{ value: "analogous", label: "Analogous" },
 									{ value: "triadic", label: "Triadic" },
+									{ value: "custom", label: "Custom" },
 								]}
 							/>
 						</div>
@@ -522,11 +690,10 @@ function CombosPageContent() {
 						<SectionLabel>Dominants</SectionLabel>
 						<div className="mt-2 flex flex-col gap-2">
 							<div className="flex items-center gap-2">
-								<ColorSwatch
+								<SwatchPicker
 									color={c1Hex}
-									size="sm"
-									className="shrink-0 border border-border/60"
-									aria-label={`Color 1 ${c1Hex}`}
+									onPick={pickC1}
+									label="Pick dominant color"
 								/>
 								<ColorInput
 									value={c1Value}
@@ -537,11 +704,10 @@ function CombosPageContent() {
 								/>
 							</div>
 							<div className="flex items-center gap-2">
-								<ColorSwatch
+								<SwatchPicker
 									color={c2Hex}
-									size="sm"
-									className="shrink-0 border border-border/60"
-									aria-label={`Color 2 ${c2Hex}`}
+									onPick={pickC2}
+									label="Pick secondary color"
 								/>
 								<ColorInput
 									value={c2Value}
@@ -569,11 +735,10 @@ function CombosPageContent() {
 							</Button>
 						</div>
 						<div className="mt-2 flex items-center gap-2">
-							<ColorSwatch
+							<SwatchPicker
 								color={accent ?? "#ffffff"}
-								size="sm"
-								className="shrink-0 border border-border/60"
-								aria-label={`Accent ${accent ?? "unset"}`}
+								onPick={pickAccent}
+								label="Pick accent color"
 							/>
 							<ColorInput
 								value={accentValue}
@@ -585,8 +750,7 @@ function CombosPageContent() {
 							/>
 						</div>
 						<p className="mt-2 font-mono text-[9px] leading-relaxed text-muted-foreground/50">
-							Derived from the first dominant via the selected harmony. Type
-							over it to take manual control.
+							Accent follows the pair through the active harmony. Edit any color to take over. Click a harmony to derive a new one.
 						</p>
 					</div>
 
@@ -611,7 +775,7 @@ function CombosPageContent() {
 									/>
 									<div className="min-w-0 flex-1">
 										<p className="font-mono text-[10px] leading-none text-foreground">
-											{row.label?.name ?? "—"}
+											{row.label?.name ?? "â€”"}
 										</p>
 										<p className="mt-1 truncate font-mono text-[9px] leading-none text-muted-foreground/60">
 											{row.hex}
@@ -631,21 +795,6 @@ function CombosPageContent() {
 									</button>
 								</div>
 							))}
-						</div>
-					</div>
-
-					{/* Actions */}
-					<div className="px-4 py-4">
-						<SectionLabel>Actions</SectionLabel>
-						<div className="mt-2 flex flex-wrap gap-2">
-							<Button
-								type="button"
-								onClick={handleReset}
-								variant="secondary"
-								className="h-8 font-mono text-[10px] uppercase tracking-wider active:scale-[0.96] transition-transform duration-150"
-							>
-								Reset
-							</Button>
 						</div>
 					</div>
 				</div>
