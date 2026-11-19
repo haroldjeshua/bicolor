@@ -24,8 +24,10 @@ import {
 import { type ColorModel } from "@/lib/constants";
 import {
 	ArrowRightIcon,
+	ArrowsLeftRightIcon,
 	CheckIcon,
 	CopyIcon,
+	CopySimpleIcon,
 	LinkSimpleIcon,
 	ShuffleIcon,
 } from "@phosphor-icons/react";
@@ -241,23 +243,36 @@ function CombosPageContent() {
 
 	useEffect(() => {
 		setContent(
-			<div className="flex items-center gap-3">
+			<>
 				<Button
-					type="button"
-					onClick={handleSwap}
-					aria-label="Swap dominant colors"
-					className="h-8 px-2 font-mono text-xs active:scale-[0.96] transition-transform duration-150"
+					variant="bare"
+					size="sm"
+					onClick={handleShuffle}
+					className="text-background/60 hover:text-muted"
+					aria-label="Shuffle colors"
 				>
-					<ArrowRightIcon size={12} className="rotate-180" />
-					<ArrowRightIcon size={12} />
+					<ShuffleIcon size={14} />
+					<span className="hidden md:inline">Shuffle</span>
 				</Button>
 				<Button
-					type="button"
-					onClick={handleCopyAll}
-					aria-label="Copy all colors"
-					className="h-8 px-2 font-mono text-xs active:scale-[0.96] transition-transform duration-150"
+					variant="bare"
+					size="sm"
+					onClick={handleSwap}
+					className="text-background/60 hover:text-muted"
+					aria-label="Swap dominant colors"
 				>
-					<CopyIcon size={12} />
+					<ArrowsLeftRightIcon size={14} />
+					<span className="hidden md:inline">Swap</span>
+				</Button>
+				<Button
+					variant="bare"
+					size="sm"
+					onClick={handleCopyAll}
+					className="text-background/60 hover:text-muted"
+					aria-label="Copy all colors"
+				>
+					<CopySimpleIcon size={14} />
+					<span className="hidden md:inline">Copy</span>
 				</Button>
 				<Link
 					href={`${pathname}?c1=${encodeURIComponent(c1Hex)}&c2=${encodeURIComponent(
@@ -266,109 +281,166 @@ function CombosPageContent() {
 					aria-label="Share combo URL"
 				>
 					<Button
-						type="button"
-						className="h-8 px-2 font-mono text-xs active:scale-[0.96] transition-transform duration-150"
+						variant="bare"
+						size="sm"
+						className="text-background/60 hover:text-muted"
 					>
-						<LinkSimpleIcon size={12} />
+						<LinkSimpleIcon size={14} />
+						<span className="hidden md:inline">Share</span>
 					</Button>
 				</Link>
-			</div>
+			</>
 		);
-	}, [c1Hex, c2Hex, accent, mode, pathname, setContent, handleSwap, handleCopyAll]);
+	}, [c1Hex, c2Hex, accent, mode, pathname, setContent, handleSwap, handleShuffle, handleCopyAll]);
 
 	return (
 		<section className="flex h-[calc(100dvh-48px)] w-full flex-col overflow-hidden pb-14 lg:flex-row">
 			{/* ── Stage: device-frame mock interface ───────────────────── */}
 			<div
 				role="img"
-				aria-label={`Combos preview: ${c1Hex} background, ${c2Hex} secondary, ${accent ?? "no"} accent`}
-				className="relative flex h-80 w-full min-w-0 flex-col items-center justify-center overflow-hidden bg-zinc-950 px-4 pb-6 pt-10 sm:h-96 sm:pb-10 lg:h-full"
+				aria-label={`Combos preview: ${c1Hex} background, ${c2Hex} sidebar, ${accent ?? "no"} accent`}
+				className="relative flex h-96 w-full min-w-0 flex-col items-center justify-center overflow-hidden bg-background px-4 pb-8 pt-8 sm:h-[30rem] lg:h-full"
 			>
 				<div
 					aria-hidden="true"
-					className="pointer-events-none absolute inset-0 opacity-60"
+					className="pointer-events-none absolute inset-0"
 					style={{
 						backgroundImage:
-							"radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)",
+							"radial-gradient(circle, light-dark(rgba(0,0,0,0.13), rgba(255,255,255,0.09)) 1px, transparent 1px)",
 						backgroundSize: "22px 22px",
 					}}
 				/>
 
-				{/* Device frame — the combo shown as a product */}
-				<div className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl shadow-black/60">
-					{/* App chrome: secondary color strip */}
-					<div
-						className="flex items-center justify-between border-b border-black/20 px-4 py-2"
-						style={{ background: c2Hex }}
-					>
-						<div className="flex gap-1.5">
-							<div className="h-2.5 w-2.5 rounded-full bg-black/25" />
-							<div className="h-2.5 w-2.5 rounded-full bg-black/25" />
+				{/* macOS-style app window: the combo shown as a real product */}
+				<div className="relative z-10 flex aspect-[16/11] w-full max-w-[560px] flex-col overflow-hidden rounded-[14px] border border-border shadow-xl shadow-black/15 dark:shadow-black/50">
+					{/* Window chrome: traffic lights + title */}
+					<div className="relative flex h-11 shrink-0 items-center gap-3 border-b border-border/80 bg-popover px-4">
+						<div className="flex gap-[7px]">
+							<span className="size-[11px] rounded-full bg-[#ff5f57]" />
+							<span className="size-[11px] rounded-full bg-[#febc2e]" />
+							<span className="size-[11px] rounded-full bg-[#28c840]" />
 						</div>
-						<span
-							className={`font-mono text-[8px] font-semibold uppercase tracking-[0.2em] ${
-								c2Ink === "black" ? "text-black" : "text-white"
-							}`}
-						>
-							bicolor / tokens
+						<span className="absolute left-1/2 -translate-x-1/2 font-mono text-[10px] font-medium text-foreground/80">
+							Tokens — bicolor
 						</span>
+						<div className="ml-auto flex items-center rounded border border-border/70 bg-muted/50 px-1.5 py-0.5 font-mono text-[8px] text-muted-foreground">
+							v0.1.0
+						</div>
 					</div>
 
-					{/* App body: dominant canvas */}
-					<div className="px-5 py-6" style={{ background: c1Hex }}>
-						<h2
-							className={`font-mono text-xl leading-snug tracking-tight ${
-								c1Ink === "black" ? "text-black" : "text-white"
-							}`}
-						>
-							Editorial scale, read whole.
-						</h2>
-						<p
-							className={`mt-1 max-w-[36ch] font-mono text-[8px] uppercase tracking-widest ${
-								c1Ink === "black" ? "text-black/60" : "text-white/70"
-							}`}
-						>
-							Two surfaces, three tokens, one accent
-						</p>
-
-						{/* Token readout */}
+					<div className="flex min-h-0 flex-1">
+						{/* Sidebar: secondary surface */}
 						<div
-							className={`mt-4 flex flex-col gap-1.5 font-mono text-[8px] uppercase tracking-widest ${
-								c1Ink === "black" ? "text-black/80" : "text-white/80"
-							}`}
+							className="flex w-24 shrink-0 flex-col gap-0.5 border-r border-border/60 px-2.5 py-3"
+							style={{ background: c2Hex }}
 						>
-							<div className="flex items-center justify-between gap-4">
-								<span>--color-primary</span>
-								<span className="tabular-nums">{c1Hex}</span>
-							</div>
-							<div className="flex items-center justify-between gap-4">
-								<span>--color-surface</span>
-								<span className="tabular-nums">{c2Hex}</span>
-							</div>
-							<div className="flex items-center justify-between gap-4">
-								<span>--color-accent</span>
-								<span className="tabular-nums">{accent ?? "—"}</span>
+							{[
+									{ label: "Tokens", active: true },
+									{ label: "Palettes", active: false },
+									{ label: "Contrast", active: false },
+									{ label: "Gradients", active: false },
+								].map((item) => (
+								<div
+									key={item.label}
+									className={`flex items-center gap-1.5 rounded-md px-2 py-1.5 font-mono text-[9px] leading-none ${
+										item.active
+											? c2Ink === "black"
+												? "bg-black/10 text-black"
+												: "bg-white/15 text-white"
+											: c2Ink === "black"
+												? "text-black/70"
+												: "text-white/75"
+									}`}
+								>
+									<span
+										className="size-1.5 shrink-0 rounded-full"
+										style={{
+											background: item.active ? (accent ?? "#fff") : "transparent",
+										}}
+									/>
+									{item.label}
+								</div>
+							))}
+
+							{/* Sidebar footer: user */}
+							<div
+								className={`mt-auto flex items-center gap-1.5 border-t px-1 pt-2 ${
+									c2Ink === "black" ? "border-black/15" : "border-white/15"
+								}`}
+							>
+								<span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-black/20 font-mono text-[7px] font-bold text-white/90">
+									BV
+								</span>
+								<div className="min-w-0 leading-tight">
+									<p className={`font-mono text-[8px] leading-none ${c2Ink === "black" ? "text-black" : "text-white"}`}>
+										bicolor
+									</p>
+									<p className={`mt-0.5 truncate font-mono text-[7px] leading-none ${c2Ink === "black" ? "text-black/60" : "text-white/65"}`}>
+										harrow_roj
+									</p>
+								</div>
 							</div>
 						</div>
 
-						{/* Accent CTA */}
-						<button
-							type="button"
-							aria-label="Save scheme"
-							className="mt-5 inline-flex cursor-pointer items-center gap-1.5 rounded-sm px-4 py-2 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] shadow-sm transition-transform duration-150 active:scale-[0.97]"
-							style={{
-								background: accent ?? "#ffffff",
-								color: accentInk === "black" ? "#0a0a0a" : "#ffffff",
-							}}
-						>
-							Save scheme
-							<ArrowRightIcon size={10} aria-hidden weight="bold" />
-						</button>
+						{/* Content: dominant canvas with token rows */}
+						<div className="flex min-w-0 flex-1 flex-col gap-1.5 p-4" style={{ background: c1Hex }}>
+							<p
+								className={`font-mono text-[7px] uppercase tracking-[0.2em] ${
+									c1Ink === "black" ? "text-black/60" : "text-white/65"
+								}`}
+							>
+								Primitives
+							</p>
+							<div className="flex flex-col">
+								{[
+									{ name: "primary", value: c1Hex },
+									{ name: "surface", value: c2Hex },
+									{ name: "accent", value: accent ?? "#ffffff" },
+								].map((row) => (
+									<div
+										key={row.name}
+										className={`flex items-center justify-between gap-3 border-b px-1.5 py-2 ${
+											c1Ink === "black" ? "border-black/15" : "border-white/15"
+										}`}
+									>
+										<span className="flex items-center gap-2">
+											<span
+												className="size-4 shrink-0 rounded-sm border border-black/20"
+												style={{ background: row.value }}
+											/>
+											<span className={`font-mono text-[9px] ${c1Ink === "black" ? "text-black" : "text-white"}`}>
+												{row.name}
+											</span>
+										</span>
+										<span className={`font-mono text-[9px] tabular-nums ${c1Ink === "black" ? "text-black/70" : "text-white/75"}`}>
+											{row.value}
+										</span>
+									</div>
+								))}
+							</div>
+
+							<p className={`font-mono text-[7px] uppercase tracking-[0.18em] ${c1Ink === "black" ? "text-black/50" : "text-white/50"}`}>
+								Derived via {mode} · oklch
+							</p>
+
+							<button
+								type="button"
+								aria-label="Export theme"
+								className="mt-auto inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-sm px-3.5 py-1.5 font-mono text-[8px] font-bold uppercase tracking-[0.18em] shadow transition-transform duration-150 active:scale-[0.96]"
+								style={{
+									background: accent ?? "#ffffff",
+									color: accentInk === "black" ? "#0a0a0a" : "#ffffff",
+								}}
+							>
+								Export theme
+								<ArrowRightIcon size={9} aria-hidden weight="bold" />
+							</button>
+						</div>
 					</div>
 				</div>
 
 				{/* Hex chips — the trio at a glance */}
-				<div className="relative z-10 mt-5 flex max-w-md flex-wrap justify-center gap-2">
+				<div className="relative z-10 mt-5 flex max-w-lg flex-wrap justify-center gap-2">
 					{[
 						{ key: "c1", value: c1Hex, label: label1?.name },
 						{ key: "c2", value: c2Hex, label: label2?.name },
@@ -397,7 +469,7 @@ function CombosPageContent() {
 									<CheckIcon size={9} aria-hidden />
 								) : null}
 							</span>
-							<span className="font-mono text-[8px] uppercase text-zinc-500">
+							<span className="font-mono text-[8px] uppercase text-muted-foreground/70">
 								{chip.label ?? "—"}
 							</span>
 						</button>
@@ -407,7 +479,7 @@ function CombosPageContent() {
 				{/* 60-30-10 readout */}
 				<div className="relative z-10 mt-4 flex items-center gap-3">
 					<Scale60_30_10 c1={c1Hex} c2={c2Hex} accent={accent} />
-					<span className="font-mono text-[10px] tabular-nums text-zinc-400">
+					<span className="font-mono text-[10px] tabular-nums text-muted-foreground">
 						60 / 30 / 10
 					</span>
 				</div>
