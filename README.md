@@ -28,6 +28,7 @@ All state is URL-shareable — every picker setting, conversion pair, palette se
 | `/palette` | Generate an 11-step OKLCH scale and export tokens |
 | `/gradient` | Build CSS gradients |
 | `/names` | Search CSS, Tailwind v4, and XKCD color names |
+| `/combos` | Build 2-dominant + 1-accent schemes with a 60-30-10 preview |
 | `/saved` | Locally saved colors and palettes |
 
 ## Color name collections
